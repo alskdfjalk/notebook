@@ -1,4 +1,6 @@
 * 编译选项
 ** 动态库:
+   #+BEGIN_SRC
    gcc trans_lb.c -shared -fPIC -o libtranslib.so
    gcc main.c -ltranslib
+   #+END_SRC
