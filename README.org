@@ -1,5 +1,5 @@
 * 笔记
-** 编译选项
+** 共享库编译选项
    #+BEGIN_SRC
    gcc trans_lb.c -shared -fPIC -o libtranslib.so
    gcc main.c -ltranslib
