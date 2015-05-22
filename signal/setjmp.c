@@ -1,3 +1,6 @@
+/*
+  该使用方法有问题
+*/
 #include <stdio.h>
 #include <setjmp.h>
 #include <signal.h>
