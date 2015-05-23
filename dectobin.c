@@ -110,7 +110,7 @@ void bintodec(const int data)
         while (tmp){
                 int i = tmp % 10;
                 if (2 <= i) {
-                        puts("This is not binary number");
+                        puts("This is not binary");
                         exit(-1);
                 }
                 bspush(bsdata, i);
