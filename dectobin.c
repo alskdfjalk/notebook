@@ -1,7 +1,12 @@
 /*
- *  trans_lb.c
+ *  dectobin.c
  *
  *  2015-05-24 张雅峰(Crazy Jerry)
+
+ Copyright (C) 2014 Free Software Foundation, Inc.
+ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+ This is free software: you are free to change and redistribute it.
+
  */
 
 /*
