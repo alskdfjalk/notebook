@@ -5,7 +5,13 @@
  */
 
 /*
- *  'dectobin.c' 转换十进制到二进制
+ *  'dectobin.c'
+         转换十进制到二进制
+         二进制转十进制
+
+     编译选项:
+         gcc -Wall -lm dectobin.c
+         因为使用了math.h库
  */
 
 #include <stdlib.h>
