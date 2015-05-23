@@ -1,5 +1,17 @@
+/*
+ *  trans_lb.c
+ *
+ *  2015-05-24 张雅峰(Crazy Jerry)
+ */
+
+/*
+ *  'dectobin.c' 转换十进制到二进制
+ */
+
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 
 struct binarystack {
@@ -50,39 +62,93 @@ int bspush(struct bsinfo *binfo, const short int nu)
         (binfo->len)++;
         return 0;
 }
-void bspop(struct bsinfo *binfo)
+short int bspop(struct bsinfo *binfo)
 {
-        printf("%d", binfo->tail->data);
+        int ret = binfo->tail->data;
         struct binarystack *tmp = binfo->tail->last;
 
         free(binfo->tail);
         binfo->tail = tmp;
 
         binfo->len--;
+        return ret;
 }
-int main(int argc, char *argv[])
-{
-        if (argc != 2) {
-                puts("error argument");
-                return -1;
-        }
 
+void dectobin(const int data)
+{
+        int tmp = data;
         struct bsinfo *bsdata = malloc(sizeof(struct bsinfo *));
         bsinit(bsdata);
 
-        int data = atoi(argv[1]);
-        while (data) {
-                bspush(bsdata, data & 1);
-                data>>=1;
+        while (tmp) {
+                bspush(bsdata, tmp & 1);
+                tmp>>=1;
         }
 
-        printf("Decimal ===>> Binary\n");
-        printf("%7d ===>> ", atoi(argv[1]));
+        int len = bsdata->len;
 
+        printf("%10s ===>> Binary\n", "Decimal");
+        printf("%10d ===>> ", data);
         while (bsdata->len)
-                bspop(bsdata);
+                printf("%d", bspop(bsdata));
 
         free(bsdata);
-        printf("\n");
+        printf("   (长度: %d)\n", len);
+}
+void bintodec(const int data)
+{
+        int tmp = data;
+        struct bsinfo *bsdata = malloc(sizeof(struct bsinfo *));
+        bsinit(bsdata);
+
+        while (tmp){
+                int i = tmp % 10;
+                if (2 <= i) {
+                        puts("This is not binary number");
+                        exit(-1);
+                }
+                bspush(bsdata, i);
+                tmp /= 10;
+        }
+
+        int len = bsdata->len;
+        int ret = 0;
+        printf("%10s  ===>>  Decimal\n", "Binary");
+        printf("%10d  ===>>  ", data);
+        while (bsdata->len) {
+                ret += (bspop(bsdata) * (int)pow(2.0, (double)bsdata->len));
+        }
+        printf("%d", ret);
+        free(bsdata);
+        printf("   (长度: %d)\n", len);
+}
+void help(char *name)
+{
+        printf("Binary and decimal transfor tools\n"
+               "\t%s [option] <number>\n"
+               "\t\t-b\t"
+               "binary to decimal(二进制转十进制)\n"
+               "\t\t-d\t"
+               "decimal to binary(十进制转二进制)\n"
+               "\tFor example: \n"
+               "\t\t%s -d 255\n\n", name, name);
+}
+
+int main(int argc, char *argv[])
+{
+        if (argc != 3) {
+                help(argv[0]);
+                return -1;
+        }
+
+        int data = atoi(argv[2]);
+
+        char *opt = argv[1];
+        if ('-' == opt[0] && 'd' == opt[1])
+                dectobin(data);
+        else if ('-' == opt[0] && 'b' == opt[1]) {
+                bintodec(data);
+        } else
+                help(argv[0]);
         return 0;
 }
