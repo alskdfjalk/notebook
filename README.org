@@ -1,4 +1,7 @@
 * 笔记
+** 该目录说明
+   会存放一些偶尔想到的需要用到的小工具
+
 ** 共享库编译选项
    #+BEGIN_SRC
    gcc trans_lb.c -shared -fPIC -o libtranslib.so
