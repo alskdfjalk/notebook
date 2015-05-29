@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <math.h>
 
-
 struct binarystack {
         short int data;
         struct binarystack *last;
@@ -75,13 +74,22 @@ int bspush(struct bsinfo *binfo, const short int nu)
 }
 short int bspop(struct bsinfo *binfo)
 {
-        int ret = binfo->tail->data;
-        struct binarystack *tmp = binfo->tail->last;
+        int ret;
+        struct binarystack *tmp;
+        if (NULL == binfo->tail && NULL != binfo->root) {
+                ret = binfo->root->data;
+                free(binfo->root);
+                binfo->len--;
+        }
+        else {
+                ret = binfo->tail->data;
+                tmp = malloc(sizeof(struct binarystack));
+                tmp = binfo->tail->last;
 
-        free(binfo->tail);
-        binfo->tail = tmp;
-
-        binfo->len--;
+                free(binfo->tail);
+                binfo->tail = tmp;
+                binfo->len--;
+        }
         return ret;
 }
 
@@ -133,14 +141,52 @@ void bintodec(const int data)
         free(bsdata);
         printf("   (长度: %d)\n", len);
 }
+int gethex(const char *data)
+{
+        switch((char)*data) {
+        case 'A':
+                return 10;
+        case 'B':
+                return 11;
+        case 'C':
+                return 12;
+        case 'D':
+                return 13;
+        case 'E':
+                return 14;
+        case 'F':
+                return 15;
+        default:
+                return atoi(data);
+        }
+}
+void hextodec(const char *data)
+{
+        const char *tmp = data;
+        int datalen = strlen(tmp);
+
+        int ret = 0;
+        int len;
+        printf("%10s  ===>>  Decimal\n", "Hex");
+        printf("%10s  ===>>  ", tmp);
+        int i = 0;
+        while ((len = (--datalen)) >= 0){
+                ret += ((int)gethex((char *)(tmp + len)) * (int)pow(16.0, i));
+                i++;
+        }
+        printf("%d\t", ret);
+        printf("   (长度: %ld)\n", strlen(tmp));
+}
 void help(char *name)
 {
-        printf("Binary and decimal transfor tools\n"
+        printf("Binary/Decimal/Hex transfor tools\n"
                "\t%s [option] <number>\n"
                "\t\t-b\t"
                "binary to decimal(二进制转十进制)\n"
                "\t\t-d\t"
                "decimal to binary(十进制转二进制)\n"
+               "\t\t-h\t"
+               "hex to decimal(十六进制转十进制)\n"
                "\tFor example: \n"
                "\t\t%s -d 255\n\n", name, name);
 }
@@ -151,15 +197,18 @@ int main(int argc, char *argv[])
                 help(argv[0]);
                 return -1;
         }
-
-        int data = atoi(argv[2]);
-
         char *opt = argv[1];
-        if ('-' == opt[0] && 'd' == opt[1])
-                dectobin(data);
-        else if ('-' == opt[0] && 'b' == opt[1]) {
-                bintodec(data);
-        } else
-                help(argv[0]);
+
+        if ('-' == opt[0] && 'h' == opt[1])
+                hextodec(argv[2]);
+        else {
+                int data = atoi(argv[2]);
+                if ('-' == opt[0] && 'd' == opt[1])
+                        dectobin(data);
+                else if ('-' == opt[0] && 'b' == opt[1]) {
+                        bintodec(data);
+                } else
+                        help(argv[0]);
+        }
         return 0;
 }
