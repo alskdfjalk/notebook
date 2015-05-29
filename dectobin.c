@@ -145,18 +145,21 @@ void bintodec(const int data)
 }
 int gethex(const char *data)
 {
-        switch((char)*data) {
-        case 'A':
+        char tmp = (char)*data;
+        if ('A' <= tmp && 'Z' >= tmp)
+                tmp += 32;
+        switch((char)tmp) {
+        case 'a':
                 return 10;
-        case 'B':
+        case 'b':
                 return 11;
-        case 'C':
+        case 'c':
                 return 12;
-        case 'D':
+        case 'd':
                 return 13;
-        case 'E':
+        case 'e':
                 return 14;
-        case 'F':
+        case 'f':
                 return 15;
         default:
                 return atoi(data);
@@ -174,8 +177,7 @@ void hextodec(const char *data)
         int i = 0;
         while ((len = (--datalen)) >= 0)
                 ret += ((int)gethex((char *)(tmp + len)) * (int)pow(16.0, i++));
-        printf("%d\t", ret);
-        printf("   (长度: %ld)\n", strlen(tmp));
+        printf("%d\t   (长度: %ld)\n", ret, strlen(tmp));
 }
 void help(char *name)
 {
