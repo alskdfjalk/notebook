@@ -172,10 +172,8 @@ void hextodec(const char *data)
         printf("%10s  ===>>  Decimal\n", "Hex");
         printf("%10s  ===>>  ", tmp);
         int i = 0;
-        while ((len = (--datalen)) >= 0){
-                ret += ((int)gethex((char *)(tmp + len)) * (int)pow(16.0, i));
-                i++;
-        }
+        while ((len = (--datalen)) >= 0)
+                ret += ((int)gethex((char *)(tmp + len)) * (int)pow(16.0, i++));
         printf("%d\t", ret);
         printf("   (长度: %ld)\n", strlen(tmp));
 }
