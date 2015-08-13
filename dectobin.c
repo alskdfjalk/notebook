@@ -213,5 +213,4 @@ int main(int argc, char *argv[])
                         help(argv[0]);
         }
         return 0;
-        new line;
 }
