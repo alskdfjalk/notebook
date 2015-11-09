@@ -1,0 +1,65 @@
+ = Docker =
+== 第一章 从容器到容器云 ==
+=== 云计算平台 ===
+==== 关键词：====
+* NIST (National Institute of Standards and Technology):
+    - "The NIST Definition of Cloud Computing" 论文定义了人们认可的计算三层服务模型
+      # IaaS(Infrastructure as a Service) 基础设施即服务:  虚拟机、存储、负载均衡、网络
+      - Paas(Platform as a Service) 平台即服务:  运行时环境、数据库、Web服务器、开发工具
+      - SaaS(Software as a Service) 软件即服务:  客户关系管理、邮件、虚拟桌面、通信、游戏
+
+        Iaas层为基础设施运维人员服务，提供计算、存储、网络及其他基础资源，云平台使用者可以再上面部署和运行包括操作系统和应用程序在哪的任意软件，无需再为基础设施的管理而分心。
+	
+        PaaS层为应用开发人员服务，提供支撑应用运行所需的软件运行时环境，相关工具与服务，如数据库服务、日志服务、监控服务等，让应用开发者可以专注于核心业务的开发。
+            
+        SaaS层为一般用户服务，提供了一套完整可用的软件系统，让一般用户无需关注技术细节，只需通过浏览器、应用客户端等放就能使用部署在云上的应用服务。
+        
+`生命周期管理机制（Application Lifecycle Management, ALM)` <br/>
+`十二要素应用规范（The Twelve-Factor App）`<br/>
+
+* 现有虚拟化环境的缺陷
+  - IaaS
+    # 最小粒度：虚拟机
+    - 资源利用率低
+    - 调度分发缓慢
+    - 软件堆栈环境不统一
+  - PaaS
+    # 从IaaS发展而来，所以带来的问题是应用架构选择、支持的软件环境服务方面有限制
+    - 带来了应用与平台无法解耦
+    - 应用运行时环境局限性强
+    - 运维人员控制力下降
+
+<h4>`可见，不论IaaS还是PaaS都有各自适用的场景，但依旧存在诸多缺陷，所以亟须一个真正可用的解决方案`<h4>
+
+<hr/>
+=== 容器，新的革命 ===
+==== Docker是什么？ ====
+`每一场革命背后都有着深刻的历史背景和矛盾冲突，新陈代谢是历史的必然结果，新声取代陈旧得益于理念的飞跃和对时代发展需求的契合，Docker抓住了这个契机!`
+
+* 官方定义
+    
+    Docker containers wrap up a piece of software in a complete filesystem that contains everything it needs to run: code, runtime, system tools, system libraries – anything you can install on a server. This guarantees that it will always run the same, regardless of the environment it is running in.
+    
+    Docker将所有需要的东西打包进一个容器里：代码、运行时的环境、系统工具、系统库，任何你在你的服务器上想要的东西。可以保证你的环境在任何环境下都可以忽略环境的差异去使用。
+    
+* 书里的翻译
+
+    Docker是以Docker容器为资源分割和调度的基本单位，封装整个软件运行时环境，为开发者和系统管理员设计的，用于构建、发布和运行分布式应用的平台。它是一个平台、可移植并且简单易用的容器解决方案。
+
+* 其他属性
+  - 托管：
+    - github: [[https://github.com/docker/docker]]
+  - 开发语言：
+    - Go
+
+* 历史
+  - 2013年3月，Docker正式发布开源版本，GitHub忠Docker代码提交盛况空前，风头之劲一时无两。
+  - 2013年11月，RHEL（书里写的是REHL，是盗版的吗？？）6.5正式版发布，集成了对Docker的支持
+  - 2014年4月到6月，云技术市场上的三大巨头Amazon、Google、MicroSoft Azure相继支持
+  - 2014年6月，DockerCon 2014大会召开，会上来自Google、IBM、Amazon、Red Hat、Facebook及Twitter的嘉宾参与演讲，Docker 1.0 正式发布
+  - 2014年8月，VMware宣布与Docker建立合作关系
+  - 2014年10月，微软宣布将整合Docker到下一代的Windows Server中
+  - 2014年10月15日，Azure和Docker共同举办了Docker全球开发者大会
+  - 2014年底，Google率先发布容器引擎Google Container Engine(GCE)，整合了Docker、Google自有容器技术和在DockerCon 2014大会上发布的Kubernetes。
+  - 2015年4月，Docker公司宣布完成了9500万美元的
+  - 2015年5月，GiHub中Docker的贡献者多达近千人，被关注和喜爱（Star）多达两万一千余次（当时Linux内核被关注次数为两万两千＋）
