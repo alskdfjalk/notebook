@@ -63,3 +63,13 @@
   - 2014年底，Google率先发布容器引擎Google Container Engine(GCE)，整合了Docker、Google自有容器技术和在DockerCon 2014大会上发布的Kubernetes。
   - 2015年4月，Docker公司宣布完成了9500万美元的
   - 2015年5月，GiHub中Docker的贡献者多达近千人，被关注和喜爱（Star）多达两万一千余次（当时Linux内核被关注次数为两万两千＋）
+
+=== Docker生态系统 ===
+`围绕Docker的生态系统自上而下分别覆盖了Iaas、PaaS层所涉及的各类问题，包括资源调度、编排、部署、配置管理、应用开发和部署平台、应用开发工具、应用服务供应以及大数据分析等云计算相关的服务。`
+
+* 优势
+  # 持续部署与测试:
+  `Docker消除了线上线下的环境差异，保证了应用生命周琦的环境一致性和标准化。开发和测试可以直接部属和发布。`
+  - 跨平台支持：
+  `目前支持Docker的IaaS云平台包括但不限于AWS、GCP、Azure、OpenStack`
+
