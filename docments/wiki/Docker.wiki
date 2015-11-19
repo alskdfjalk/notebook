@@ -64,12 +64,111 @@
   - 2015年4月，Docker公司宣布完成了9500万美元的
   - 2015年5月，GiHub中Docker的贡献者多达近千人，被关注和喜爱（Star）多达两万一千余次（当时Linux内核被关注次数为两万两千＋）
 
+<hr/>
 === Docker生态系统 ===
 `围绕Docker的生态系统自上而下分别覆盖了Iaas、PaaS层所涉及的各类问题，包括资源调度、编排、部署、配置管理、应用开发和部署平台、应用开发工具、应用服务供应以及大数据分析等云计算相关的服务。`
 
 * 优势
+  [[../img/docker生态系统.jpg|Docker生态系统(图)]]
   # 持续部署与测试:
-  `Docker消除了线上线下的环境差异，保证了应用生命周琦的环境一致性和标准化。开发和测试可以直接部属和发布。`
+  {{{
+  	Docker消除了线上线下的环境差异，保证了应用生命周琦的环境一致性和标准
+	化。开发和测试可以直接部属和发布。
+  }}}
   - 跨平台支持：
-  `目前支持Docker的IaaS云平台包括但不限于AWS、GCP、Azure、OpenStack`
+  {{{
+  	目前支持Docker的IaaS云平台包括但不限于AWS、GCP、Azure、OpenStack
+  }}} 
+  - 环境标准化和版本控制
+  {{{
+  	由于Docker的特性，可以使用git等工具对其镜像进行版本控制，一旦故障，
+	不仅可以回滚代码，还可以对整环境进行回滚
+  }}}
+  - 高资源利用率与隔离
+  {{{ 
+	与底层共享操作系统，性能优良，负载低，在同等条件下可以运行更多的实例。
+	同时拥有不错的资源隔离和限制能力。
+    }}}
+  - 容器跨平台性与镜像
+  {{{
+    	Linux容器在2.6内核已经存在，但是兼容性（跨平台）太差，难以推广。
+    	Docker真正实现了"构造一次，到处运行"的理念。
+    }}}
+  - 易于理解且易用
+  {{{
+    	Docker的原意为"处理集装箱的码头工人"，标志是运送一大堆集装箱，集装箱
+	就是容器。
+	一个开发者可以在15分钟内入门并安装部署
+    }}}
+  - 应用镜像仓库
+  {{{
+  	Docker官方构建了一个镜像仓库，组织和管理形式类似于GitHub。
+  }}}
+<hr/>
+=== 进化：从容器到容器云 ===
+* 需求
+   `无论个人还是企业，都会提出更复杂的需。企业级开发更需要基于容器技术，实现支持多人协作的持续集成，持续交付平台。`
+* 什么是容器云？
+  # 容器云以容器为资源分割和调度的基本单位，封装整个软件运行时环境。
+	`当容器云专注于资源共享与隔离、容器编排与部署时，它更接近于传统的IaaS；当容器云渗透到应用支撑时，它更接近传统的PaaS`
+  - 容器云不限于Docker
+  	`基于rkt容器的CoreOS项目也是容器云。`
+  	
+<br/>
+<hr/>
+== 第二章：Docker基础 ==
+=== Docker安装 ===
+`Linux平台是Docker的原生支持平台，在Linux上使用可以得到最佳的用户体验。`
+* 安装依赖
+  # 只支持64位CPU
+  - 建议系统内核Linux版本3.10以上
+  - 内核需开启cgroups和namespace功能
+  - 对于非Linux内核的平台，需要安装使用Boot2Docker工具
+  `这里只记录ubuntu和RH的安装方法`
+* 安装方式
+  # debian的安装（我只有debian的虚拟机）
+  {{{ class="brush:bash"
+	deb http://mirrors.163.com/debian/ jessie main non-free contrib
+	deb http://mirrors.163.com/debian/ jessie-updates main non-free contrib
+	deb http://mirrors.163.com/debian/ jessie-backports main non-free contrib
+	deb-src http://mirrors.163.com/debian/ jessie main non-free contrib
+	deb-src http://mirrors.163.com/debian/ jessie-updates main non-free contrib
+	deb-src http://mirrors.163.com/debian/ jessie-backports main non-free contrib
+	deb http://mirrors.163.com/debian-security/ jessi
+	
+	将以上内容添加到 /etc/apt/source.list
+	
+	$ apt-get update
+	$ apt-get install docker.io
+  }}}
+* Docker操作参数解读
+	`在使用Docker时，需要使用Docker命令行工具docker与Docker daemon建立通信。`
+  # 帮助信息
+    {{{
+      	root@mac-debian:~# docker help
+	Usage: docker [OPTIONS] COMMAND [arg...]
 
+	A self-sufficient runtime for linux containers.
+
+	Options:
+  	  --api-cors-header=                   Set CORS headers in the remote API
+  	  -b, --bridge=                        Attach containers to a network bridg
+  	  ......
+	  version   Show the Docker version information
+    	  wait      Block until a container stops, then print its exit code
+
+	  Run 'docker COMMAND --help' for more information on a command.
+      }}}
+  - 命令概览分类
+    {{{
+     	  子命令分类				子命令
+     	  
+	Docker环境信息			     info、version
+	容器生命周期管理			     Create、exec、kill、pause、restart、rm、run、start、stop、unpause
+	镜像仓库命令			     login、logout、pull、push、search
+	镜像管理				     build、images、import、load、rmi、save、tag、commit
+	容器运维操作			     attach、export、inspect、port、ps、rename、stats、top、wait、cp、diff
+	系统日志信息			     eventv、history、logs
+      }}}
+  - 命令结构图
+  [[../img/docker命令结构图.jpg|Docker命令结构图(图)]]
