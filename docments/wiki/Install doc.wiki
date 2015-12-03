@@ -22,138 +22,23 @@ Hadoop下载地址 http://mirrors.hust.edu.cn/apache/hadoop/common/hadoop-2.6.2/
 	see if this is permitted.  See <http://www.wassenaar.org/> for more
 	information.
 	
+	该应用(hadoop)包含了加密软件(模块、组件). 你所在的地区可能会限制
+	该类软件的使用。在把非公开软件使用和／或重新发布给其他地址时，
+	需要确保你所在的地区的法律允许。
+	
+  }}}
+	授权详情请访问： http://www.wassenaar.org
+  {{{
 	The U.S. Government Department of Commerce, Bureau of Industry and
 	Security (BIS), has classified this software as Export Commodity 
 	Control Number (ECCN) 5D002.C.1, which includes information security
 	software using or performing cryptographic functions with asymmetric
 	algorithms.  The form and manner of this Apache Software Foundation
 	distribution makes it eligible for export under the License Exception
-	ENC Technology Software Unrestricted (TSU) exception (see the BIS 
-	Export Administration Regulations, Section 740.13) for both object 
-	code and source code.
-	
-	The following provides more details on the included cryptographic
-	software:
-	  Hadoop Core uses the SSL libraries from the Jetty project written 
-	by mortbay.org.
-  }}}
-
-= BUILDING =
-  {{{
-	Build instructions for Hadoop
-	
-	----------------------------------------------------------------------------------
-	Requirements:
-	
-	* Unix System
-	* JDK 1.6+
-	* Maven 3.0 or later
-	* Findbugs 1.3.9 (if running findbugs)
-	* ProtocolBuffer 2.5.0
-	* CMake 2.6 or newer (if compiling native code), must be 3.0 or newer on Mac
-	* Zlib devel (if compiling native code)
-	* openssl devel ( if compiling native hadoop-pipes )
-	* Internet connection for first build (to fetch all Maven and Hadoop dependencies)
-	
-	----------------------------------------------------------------------------------
-	Maven main modules:
-	
-	  hadoop                            (Main Hadoop project)
-	         - hadoop-project           (Parent POM for all Hadoop Maven modules.             )
-	                                    (All plugins & dependencies versions are defined here.)
-	         - hadoop-project-dist      (Parent POM for modules that generate distributions.)
-	         - hadoop-annotations       (Generates the Hadoop doclet used to generated the Javadocs)
-	         - hadoop-assemblies        (Maven assemblies used by the different modules)
-	         - hadoop-common-project    (Hadoop Common)
-	         - hadoop-hdfs-project      (Hadoop HDFS)
-	         - hadoop-mapreduce-project (Hadoop MapReduce)
-	         - hadoop-tools             (Hadoop tools like Streaming, Distcp, etc.)
-	         - hadoop-dist              (Hadoop distribution assembler)
-	
-	----------------------------------------------------------------------------------
-	Where to run Maven from?
-	
-	  It can be run from any module. The only catch is that if not run from utrunk
-	  all modules that are not part of the build run must be installed in the local
-	  Maven cache or available in a Maven repository.
-	
-	----------------------------------------------------------------------------------
-	Maven build goals:
-	
-	 * Clean                     : mvn clean
-	 * Compile                   : mvn compile [-Pnative]
-	 * Run tests                 : mvn test [-Pnative]
-	 * Create JAR                : mvn package
-	 * Run findbugs              : mvn compile findbugs:findbugs
-	 * Run checkstyle            : mvn compile checkstyle:checkstyle
-	 * Install JAR in M2 cache   : mvn install
-	 * Deploy JAR to Maven repo  : mvn deploy
-	 * Run clover                : mvn test -Pclover [-DcloverLicenseLocation=${user.name}/.clover.license]
-	 * Run Rat                   : mvn apache-rat:check
-	 * Build javadocs            : mvn javadoc:javadoc
-	 * Build distribution        : mvn package [-Pdist][-Pdocs][-Psrc][-Pnative][-Dtar]
-	 * Change Hadoop version     : mvn versions:set -DnewVersion=NEWVERSION
-	
-	 Build options:
-	
-	  * Use -Pnative to compile/bundle native code
-	  * Use -Pdocs to generate & bundle the documentation in the distribution (using -Pdist)
-	  * Use -Psrc to create a project source TAR.GZ
-	  * Use -Dtar to create a TAR with the distribution (using -Pdist)
-	
-	 Snappy build options:
-	
-	   Snappy is a compression library that can be utilized by the native code.
-	   It is currently an optional component, meaning that Hadoop can be built with
-	   or without this dependency.
-	
-	  * Use -Drequire.snappy to fail the build if libsnappy.so is not found.
-	    If this option is not specified and the snappy library is missing,
-	    we silently build a version of libhadoop.so that cannot make use of snappy.
-	    This option is recommended if you plan on making use of snappy and want
-	    to get more repeatable builds.
-	
-	  * Use -Dsnappy.prefix to specify a nonstandard location for the libsnappy
-	    header files and library files. You do not need this option if you have
-	    installed snappy using a package manager.
-	  * Use -Dsnappy.lib to specify a nonstandard location for the libsnappy library
-	    files.  Similarly to snappy.prefix, you do not need this option if you have
-	    installed snappy using a package manager.
-	  * Use -Dbundle.snappy to copy the contents of the snappy.lib directory into
-	    the final tar file. This option requires that -Dsnappy.lib is also given,
-	    and it ignores the -Dsnappy.prefix option.
-	
-	 OpenSSL build options:
-	
-	   OpenSSL includes a crypto library that can be utilized by the native code.
-	   It is currently an optional component, meaning that Hadoop can be built with
-	   or without this dependency.
-	
-	  * Use -Drequire.openssl to fail the build if libcrypto.so is not found.
-	    If this option is not specified and the openssl library is missing,
-	    we silently build a version of libhadoop.so that cannot make use of
-	    openssl. This option is recommended if you plan on making use of openssl 
-	    and want to get more repeatable builds.
-	  * Use -Dopenssl.prefix to specify a nonstandard location for the libcrypto
-	    header files and library files. You do not need this option if you have
-	    installed openssl using a package manager.
-	  * Use -Dopenssl.lib to specify a nonstandard location for the libcrypto library
-	    files. Similarly to openssl.prefix, you do not need this option if you have
-	    installed openssl using a package manager.
-	  * Use -Dbundle.openssl to copy the contents of the openssl.lib directory into
-	    the final tar file. This option requires that -Dopenssl.lib is also given,
-	    and it ignores the -Dopenssl.prefix option.
-	
-	   Tests options:
-	
-	  * Use -DskipTests to skip tests when running the following Maven goals:
-	    'package',  'install', 'deploy' or 'verify'
-	  * -Dtest=<TESTCLASSNAME>,<TESTCLASSNAME#METHODNAME>,....
-	  * -Dtest.exclude=<TESTCLASSNAME>
-	  * -Dtest.exclude.pattern=**/<TESTCLASSNAME1>.java,**/<TESTCLASSNAME2>.java
-	
+	ENC Technology 
 	----------------------------------------------------------------------------------
 	Building components separately
+	各个组件的构建
 	
 	If you are building a submodule directory, all the hadoop dependencies this
 	submodule has will be resolved as all other 3rd party dependencies. This is,
@@ -164,67 +49,95 @@ Hadoop下载地址 http://mirrors.hust.edu.cn/apache/hadoop/common/hadoop-2.6.2/
 	time out after a while, using the Maven '-nsu' will stop Maven from trying
 	to update SNAPSHOTs from external repos.
 	
+	如果你要构建一个项目外的模块作为当前项目的子模块，Hadoop会负责从maven库中解决
+	所有第三方依赖
+	这里有一个替代方法是在Hadoop源码根目录执行一次"mvn install -DskipTests"，
+	然后就会在自模块中运行.如果使用'-nsu'选项,将会禁止更新maven中其他repos的快照，
+	否则，运行一段时间后会超时。
+	
 	----------------------------------------------------------------------------------
 	Protocol Buffer compiler
+	相当于一个消息格式的协议的编译器（解释器）
+    }}}
+	Protocol Buffer 介绍： http://www.cnblogs.com/stephen-liu74/archive/2013/01/02/2841485.html
+    {{{
 	
 	The version of Protocol Buffer compiler, protoc, must match the version of the
 	protobuf JAR.
+	该编译器版本必须和（Java）版本匹配
 	
 	If you have multiple versions of protoc in your system, you can set in your 
 	build shell the HADOOP_PROTOC_PATH environment variable to point to the one you 
 	want to use for the Hadoop build. If you don't define this environment variable,
 	protoc is looked up in the PATH.
+	如果有安装了多个protoc版本，可以通过配置HADOOP_PROTOC_PATH环境变量来指定要使用
+	哪一个版本，如果没有指定，默认将使用PATH中的版本
 	----------------------------------------------------------------------------------
 	Importing projects to eclipse
 	
 	When you import the project to eclipse, install hadoop-maven-plugins at first.
-	(Eclipse 是一个开放源代码的、基于Java的可扩展开发平台。
+	(Eclipse 是一个开放源代码的、基于Java的可扩展开发平台。相当于一个即成开发环境。
 	就其本身而言，它只是一个框架和一组服务，用于通过插件组件构建开发环境。幸运的是，
 	Eclipse 附带了一个标准的插件集，包括Java开发工具（Java Development Kit，JDK）)
+	如果项目中使用了eclipse，需要安装 hadoop-maven-plugins, 安装方式：
 	
 	  $ cd hadoop-maven-plugins
 	  $ mvn install
 	
 	Then, generate eclipse project files.
+	然后生成eclipse的项目文件
 	
 	  $ mvn eclipse:eclipse -DskipTests
 	
 	At last, import to eclipse by specifying the root directory of the project via
 	[File] > [Import] > [Existing Projects into Workspace].
+	图形界面的操作，滚粗，直接无视。
 	
 	----------------------------------------------------------------------------------
 	Building distributions:
+	开始构建／安装
 	
 	Create binary distribution without native code and without documentation:
+	不使用原生代码，并且不需要文档的情况下构建一个二进制的分发包
 	
 	  $ mvn package -Pdist -DskipTests -Dtar
 	
 	Create binary distribution with native code and with documentation:
+	与上一条相反，包含文档以及原生代码
 	
 	  $ mvn package -Pdist,native,docs -DskipTests -Dtar
 	
 	Create source distribution:
+	创建一个源码分发包
 	
 	  $ mvn package -Psrc -DskipTests
 	
 	Create source and binary distributions with native code and documentation:
+	创建一个包含原生代码和文档的源码及二进制包
 	
 	  $ mvn package -Pdist,native,docs,src -DskipTests -Dtar
 	
 	Create a local staging version of the website (in /tmp/hadoop-site)
+	创建一个本地环境的站点
 	
 	  $ mvn clean site; mvn site:stage -DstagingDirectory=/tmp/hadoop-site
 	
 	----------------------------------------------------------------------------------
 	Installing Hadoop
+	终于要开始安装了啊，你妹啊
 	
 	Look for these HTML files after you build the document by the above commands.
+	卧槽，还需要去别处看，你妹啊
 	
 	  * Single Node Setup:
 	    hadoop-project-dist/hadoop-common/SingleCluster.html
 	
 	  * Cluster Setup:
 	    hadoop-project-dist/hadoop-common/ClusterSetup.html
+	    
+	    你妹妹啊，路径根本就没有这个文件好不好
+	    笔者只找到了这个：hadoop-2.6.2/hadoop-common-project/hadoop-common/src/site/apt/SingleCluster.apt.vm
+	    为了保证本文档结构的完整性，上述文档内容请看结尾。
 	
 	----------------------------------------------------------------------------------
 	
@@ -326,3 +239,258 @@ Hadoop下载地址 http://mirrors.hust.edu.cn/apache/hadoop/common/hadoop-2.6.2/
 	
 	 * Build distribution with native code    : mvn package [-Pdist][-Pdocs][-Psrc][-Dtar]
   }}}
+== 授权 == 
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License. See accompanying LICENSE file.
+  
+== Hadoop MapReduce Next Generation - Setting up a Single Node Cluster. ==
+
+=== Purpose ===
+
+  This document describes how to set up and configure a single-node Hadoop
+  installation so that you can quickly perform simple operations using Hadoop
+  MapReduce and the Hadoop Distributed File System (HDFS).
+
+=== Prerequisites ===
+
+==== Supported Platforms ====
+
+    # GNU/Linux is supported as a development and production platform.Hadoop has been demonstrated on GNU/Linux clusters with 2000 nodes.
+    - Windows is also a supported platform but the followings steps are for Linux only. To set up Hadoop on Windows, see [[http://wiki.apache.org/hadoop/Hadoop2OnWindows|wiki page.]]
+
+==== Required Software ====
+
+* Required software for Linux include
+  # Java must be installed. Recommended Java versions are described [[http://wiki.apache.org/hadoop/HadoopJavaVersions|HadoopJavaVersions]]
+  - ssh must be installed and sshd must be running to use the Hadoop scripts that manage remote Hadoop daemons.
+
+* Installing Software
+  If your cluster doesn't have the requisite software you will need to install it.
+	{{{
+	  For example on Ubuntu Linux:
+	
+		$ sudo apt-get install ssh
+		$ sudo apt-get install rsync
+	}}}
+* Download
+  * To get a Hadoop distribution, download a recent stable release from one of
+  the [[http://www.apache.org/dyn/closer.cgi/hadoop/common/|Apache Download Mirrors]]
+
+* Prepare to Start the Hadoop Cluster<br/>
+  * Unpack the downloaded Hadoop distribution. In the distribution, edit
+  the file <<<etc/hadoop/hadoop-env.sh>>> to define some parameters as
+  follows:
+	{{{
+		# set to the root of your Java installation
+		export JAVA_HOME=/usr/java/latest
+
+		# Assuming your installation directory is /usr/local/hadoop
+		export HADOOP_PREFIX=/usr/local/hadoop
+	}}}
+  * Try the following command:
+	{{{
+		$ bin/hadoop
+	}}}
+  * This will display the usage documentation for the hadoop script.<br/>
+ 
+* Now you are ready to start your Hadoop cluster in one of the three supported
+  modes:
+   * {{{Standalone Operation}Local (Standalone) Mode}}
+   * {{{Pseudo-Distributed Operation}Pseudo-Distributed Mode}}
+   * {{{Fully-Distributed Operation}Fully-Distributed Mode}}
+
+==== Standalone Operation ====
+* By default, Hadoop is configured to run in a non-distributed mode, as a
+  single Java process. This is useful for debugging.
+
+  The following example copies the unpacked conf directory to use as input
+  and then finds and displays every match of the given regular expression.
+  Output is written to the given output directory.
+
+----
+  $ mkdir input
+  $ cp etc/hadoop/*.xml input
+  $ bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${project.version}.jar grep input output 'dfs[a-z.]+'
+  $ cat output/*
+----
+
+* Pseudo-Distributed Operation
+
+  Hadoop can also be run on a single-node in a pseudo-distributed mode where
+  each Hadoop daemon runs in a separate Java process.
+
+** Configuration
+
+  Use the following:
+
+  etc/hadoop/core-site.xml:
+
++---+
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
++---+
+
+  etc/hadoop/hdfs-site.xml:
+
++---+
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+</configuration>
++---+
+
+** Setup passphraseless ssh
+
+  Now check that you can ssh to the localhost without a passphrase:
+
+----
+  $ ssh localhost
+----
+
+  If you cannot ssh to localhost without a passphrase, execute the
+  following commands:
+
+----
+  $ ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
+  $ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
+----
+
+** Execution
+
+  The following instructions are to run a MapReduce job locally.
+  If you want to execute a job on YARN, see {{YARN on Single Node}}.
+
+  [[1]] Format the filesystem:
+
+----
+  $ bin/hdfs namenode -format
+----
+
+  [[2]] Start NameNode daemon and DataNode daemon:
+
+----
+  $ sbin/start-dfs.sh
+----
+
+        The hadoop daemon log output is written to the <<<${HADOOP_LOG_DIR}>>>
+        directory (defaults to <<<${HADOOP_HOME}/logs>>>).
+
+  [[3]] Browse the web interface for the NameNode; by default it is
+        available at:
+
+        * NameNode - <<<http://localhost:50070/>>>
+
+  [[4]] Make the HDFS directories required to execute MapReduce jobs:
+
+----
+  $ bin/hdfs dfs -mkdir /user
+  $ bin/hdfs dfs -mkdir /user/<username>
+----
+
+  [[5]] Copy the input files into the distributed filesystem:
+
+----
+  $ bin/hdfs dfs -put etc/hadoop input
+----
+
+  [[6]] Run some of the examples provided:
+
+----
+  $ bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${project.version}.jar grep input output 'dfs[a-z.]+'
+----
+
+  [[7]] Examine the output files:
+
+        Copy the output files from the distributed filesystem to the local
+        filesystem and examine them:
+
+----
+  $ bin/hdfs dfs -get output output
+  $ cat output/*
+----
+
+        or
+
+        View the output files on the distributed filesystem:
+
+----
+  $ bin/hdfs dfs -cat output/*
+----
+
+  [[8]] When you're done, stop the daemons with:
+
+----
+  $ sbin/stop-dfs.sh
+----
+
+** YARN on Single Node
+
+  You can run a MapReduce job on YARN in a pseudo-distributed mode by setting
+  a few parameters and running ResourceManager daemon and NodeManager daemon
+  in addition.
+
+  The following instructions assume that 1. ~ 4. steps of
+  {{{Execution}the above instructions}} are already executed.
+
+  [[1]] Configure parameters as follows:
+
+        etc/hadoop/mapred-site.xml:
+
++---+
+<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+</configuration>
++---+
+
+        etc/hadoop/yarn-site.xml:
+
++---+
+<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+</configuration>
++---+
+
+  [[2]] Start ResourceManager daemon and NodeManager daemon:
+
+----
+  $ sbin/start-yarn.sh
+----
+
+  [[3]] Browse the web interface for the ResourceManager; by default it is
+        available at:
+
+        * ResourceManager - <<<http://localhost:8088/>>>
+
+  [[4]] Run a MapReduce job.
+
+  [[5]] When you're done, stop the daemons with:
+
+----
+  $ sbin/stop-yarn.sh
+----
+
+* Fully-Distributed Operation
+
+  For information on setting up fully-distributed, non-trivial clusters
+  see {{{./ClusterSetup.html}Cluster Setup}}.
