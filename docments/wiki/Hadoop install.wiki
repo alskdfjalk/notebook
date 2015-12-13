@@ -1,0 +1,35 @@
+ = Hadoop =
+* [[http://hadoop.apache.org/docs/r1.0.4/cn/quickstart.html|官方文档地址]]
+== 目的 ==
+<h4>这篇文档的目的是帮助你快速完成单机上的Hadoop安装与使用以便你对Hadoop分布式文件系统(HDFS)和Map-Reduce框架有所体会，比如在HDFS上运行示例程序或简单作业等。<h4/>
+== 第一章 初识Hadoop ==
+* Hadoop项目简述
+  # Common  
+     `一组分布式文件系统和通用IO的组件与接口(序列化、Java RPC 和持久化数据结构)`
+  - Avro  
+     `一种支持高效、跨语言的RPC以及永久存储数据的序列化系统` 
+  - MapReduce  
+     `分布式数据处理模型和执行环境，运行于大型商用机集群。`  
+  - HDFS
+     `分布式文件系统，运行于大型商用机集群。`
+  - Pig
+     `一种数据流语言和运行环境，用以检索非常大的数据集。Pig运行在MapReduce和HDFS的集群上`
+  - Hive
+     `一个分布式、按列存储的数据仓库。Hive管理HDFS中存储的数据，并提供基于SQL的查询语言（由运行时引擎翻译成MapReduce作业)用以查询数据`
+  - HBase
+     `一个分布式、按列存储数据库。HBase使用HDFS作为底层存储，同时支持MapReduce的批量式计算和点查询（随机读取）`
+  - ZooKeeper
+     `一个分布式、可用性高的协调服务。ZooKeeper提供分布式锁之类的基本服务用于构建分布式应用`
+  - Sqoop
+     `在数据库和HDFS之间高效传输数据的工具`
+    
+* MapReduce简介
+    {{{
+	    MapReduce是一种可用于数据处理的编程模型。支持各种语言，如：Java、Ruby、Python、C++。本质上是并行的 
+      }}}
+      
+== 第二章 安装 ==
+* 支持平台
+  # GNU／Linux是产品开发和运行平台
+  - Win32平台是作为开发平台支持的。由于分布式操作尚未在Win32平台上充分测试，所以还不作为一个生产平台被支持。
+* 安装方法见[[Install doc]]
