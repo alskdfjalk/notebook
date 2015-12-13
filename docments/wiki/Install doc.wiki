@@ -311,6 +311,10 @@ Hadoop下载地址 http://mirrors.hust.edu.cn/apache/hadoop/common/hadoop-2.6.2/
 	Eclipse 附带了一个标准的插件集，包括Java开发工具（Java Development Kit，JDK）)
 	如果项目中使用了eclipse，需要安装 hadoop-maven-plugins, 安装方式：
 	
+        }}}
+         Maven 下载地址：http://maven.apache.org/download.cgi
+	{{{
+	
 	  $ cd hadoop-maven-plugins
 	  $ mvn install
 	
