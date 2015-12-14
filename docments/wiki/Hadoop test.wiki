@@ -1,0 +1,27 @@
+ === 命令介绍 ===
+==== hadoop fs ====
+  {{{
+        [root@monitor-27 ~]# hadoop fs -mkdir /user
+        [root@monitor-27 ~]# hadoop fs -mkdir /user/hadoop
+        [root@monitor-27 ~]# hadoop fs -ls /
+        Found 1 items
+        drwxr-xr-x   - root supergroup          0 2015-12-14 20:25 /user
+        [root@monitor-27 ~]# hadoop fs -ls /user
+        Found 1 items
+        drwxr-xr-x   - root supergroup          0 2015-12-14 20:25 /user/hadoop
+        [root@monitor-27 ~]# hadoop fs -mkdir /data
+        [root@monitor-27 ~]# echo Hello world >> test.txt
+        [root@monitor-27 ~]# hadoop fs -copyFromLocal test.txt /
+        [root@monitor-27 ~]# hadoop fs -ls /
+        Found 3 items
+        drwxr-xr-x   - root supergroup          0 2015-12-14 20:27 /data
+        -rw-r--r--   1 root supergroup         12 2015-12-14 20:29 /test.txt
+        drwxr-xr-x   - root supergroup          0 2015-12-14 20:25 /user
+        [root@monitor-27 ~]# hadoop fs -cp /test.txt /data
+        [root@monitor-27 ~]# hadoop fs -ls /data
+        Found 1 items
+        -rw-r--r--   1 root supergroup         12 2015-12-14 20:30 /data/test.txt
+        [root@monitor-27 ~]# hadoop fs -cat /data/test.txt
+        Hello world
+        [root@monitor-27 ~]#
+  }}}

@@ -1,4 +1,13 @@
-== Hadoop 安装 ==
-* [[Hadoop install]]
-== Hadoop 初识 ==
+=== 回到首页 ===
+* [[index]]
+=== Hadoop 初识 ===
 * [[What's the Hadoop]]
+=== Hadoop 安装 ===
+* [[Hadoop install]]
+=== Hadoop 使用 ===
+* [[Hadoop test]]
+=== 理解MapReduce ===
+* [[Understood MapReduce]]
+=== 开发MapReduce程序 ===
+* [[coding MapReduce]]
+

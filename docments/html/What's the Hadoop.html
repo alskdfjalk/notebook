@@ -197,6 +197,18 @@ MapReduce
 MapReduce是一个基于上述原理的处理范式，它实现了从源数据集到结果数据集的一系列转换。在最简单的情况下，作业的输入数据做为map函数的输入，所得到的临时数据作为reduce函数的输入。开发人员只需定义数据转换形式，Hadoop的MapReduce作业负责并行地对集群中的数据实施所需转换。
 Hadoop为map和reduce函数提供了一个标准规范(接口)，上述规范的具体实现通常被称为mapper和reducer。一个典型的MapReduce作业包括多个mapper和reducer，通常这些mapper和reducer并不是很简单。
 </blockquote>
+  
+<ol>
+<li>
+劣势
+
+<ul>
+<li>
+延迟较高，不适用于实时系统，但是这里有一篇google论文，简述了他们如何实现实时地使用MapReduce
+  <a href="http://research.google.com/archive/googlecluster.html">http://research.google.com/archive/googlecluster.html</a>
+
+</ul>
+</ol>
 
 </body>
 </html>
