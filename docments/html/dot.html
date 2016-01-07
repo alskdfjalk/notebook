@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<link rel="Stylesheet" type="text/css" href="style.css">
+<title>dot</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h4 id="toc_0.0.0.1">Dot language</h4>
+<pre>
+	/* 简单图例
+	graph graphname {
+		rankdir = LR;		//Rank Direction Left to Right
+		a -- b;
+		b -- c;
+		b -- d;
+		d -- a;
+	}
+	*/
+	
+	/* 有向图
+	digraph graphname {
+		a -&gt; b;
+		b -&gt; c;
+		a -&gt; c;
+	}
+	*/
+	
+	/* 带标签的简单有向图
+	digraph graphname {
+		T	[label="Teacher"]
+		P	[label="Pupil"]
+	
+		T -&gt; P  [label="Instructions", fontcolor=darkgreen]
+	}
+	*/
+	
+	/* 同样的图，不同的形状和颜色
+	形状示例: http://www.graphviz.org/content/node-shapes
+	digraph graphname {
+		T	[label="Teacher" color=Blue, fontcolor=Red, fontsize=24, shape=box]
+		P	[label="Pupil" color=Blue, fontcolor=pink, fontsize=24, shape=oval]
+	
+		T-&gt;P	[label="Instructions", fontcolor=darkgreen]
+	}
+	*/
+	
+	/*
+	digraph summary {
+		start	[label="Start with a Node"]
+		next	[label="Choose your shape", shape=box]
+		warning [label="Don't go overboard", color=Blue, 
+				fontcolor=Red, fontsize=24, style=filled, 
+				fillcolor=green, shape=octagon]
+		end	[label="Draw your graph!", shape=box, style=filled, fillcolor=yellow]
+	
+		start-&gt;next
+		start-&gt;warning
+		next-&gt;end	[label="Getting Better...", fontcolor=Blue]
+	}
+	*/
+	
+	/* 单独地去定义每一个节点其实很浪费时间，虾面这个技巧能够加速
+	digraph hierarchy {
+		nodesep = 1.0  // increases the separation between nodes
+		
+		node [color=Red, fontname=Courier, shape=box] // All nodes will this shape and colour 
+		edge [color=Blue, style=dashed] // All the lines look like this
+	
+		Headteacher-&gt;{Deputy1 Deputy2 BusinessManage}
+		Deputy1-&gt;{Teacher1 Teacher2}
+		BusinessManage-&gt;ITManager
+		{rank=same;ITManager Teacher1 Teacher2} // Put them on the same level
+	}
+	*/
+	
+	/*	可以用HTML来定义这一类节点
+	digraph structs {
+		node	[shape=record]
+		struct1	[label="&lt;f0&gt; left|&lt;f1&gt; mid\ dle|&lt;f2&gt; right"];
+		struct2	[label="{&lt;f0&gt; one|&lt;f1&gt; two\n\n\n}" shape=Mrecord];
+		struct3	[label="&lt;f1&gt;hello\nworld |{ b |{c|&lt;here&gt; d|e}| f}| g | h"];
+	
+		struct1:f1 -&gt; struct2:f0;
+		struct1:f0 -&gt; struct3:f1;
+	}
+	*/
+	
+	/* 有限状态机
+	digraph finite_state_machine {
+		rankdir = LR;
+		size = "8,5";
+		node	[shape = circle];
+		S0 -&gt; S1 [ label = "Lift Nozzle"];
+		S1 -&gt; S0 [ label = "Replace Nozzle"];
+		S1 -&gt; S2 [ label = "Authorize Pump"];
+		S2 -&gt; S0 [ label = "Replace Nozzle"];
+		S2 -&gt; S3 [ label = "Pull Trigger"];
+		S3 -&gt; S2 [ label = "Release Trigger"];
+	}
+	*/
+	
+	/* 数据流示意图
+	digraph dfd {
+		node	[shape=record];
+		store1 [label="&lt;f0&gt; left|&lt;f1&gt; Some data store"];
+		proc1  [label="{&lt;f0&gt; 1.0|&lt;f1&gt; Some process here\n\n\n}" shape=Mrecord];
+		enti1	[label="Customer" shape=box];
+		store1:f1 -&gt; proc1:f0;
+		enti1 -&gt; proc1:f0;
+	}
+	*/
+</pre>
+
+</body>
+</html>

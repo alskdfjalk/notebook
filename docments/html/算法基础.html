@@ -1,0 +1,40 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<link rel="Stylesheet" type="text/css" href="style.css">
+<title>算法基础</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h4 id="toc_0.0.0.1">排序算法</h4>
+<p>
+算法的基础是排序算法
+</p>
+<h5 id="toc_0.0.0.1.1">插入排序</h5>
+<ul>
+<li>
+定义
+<pre>
+  	生活实例：
+		插入排序的工作方式像许多人排序一手扑克牌。开始时，我们的左手为空
+	并且桌子上的牌面向下。然后，我们没次从桌子上拿走一张牌并将它插入左手中正
+	确的位置，我们从右到左将它与已在手中的拍总是排序好的, 原来这些牌是桌子上
+	牌堆中顶部的牌。
+	
+	代码：
+		for (int i = 0; i &lt; len(data); i++) {
+			tmp_of_now = data[i];
+			last_array = i - 1;
+			if (last_array &gt; 0 &amp;&amp; data[last_array] &gt; tmp_of_now) {
+				data[last_array+1] = data[last_array];
+				last_array--;
+			}
+			data[last_array+1] = tmp_of_now;
+		}
+</pre>
+
+</ul>
+
+</body>
+</html>

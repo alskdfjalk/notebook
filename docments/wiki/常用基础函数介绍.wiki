@@ -1,0 +1,70 @@
+* IPv4 套接字地址结构
+  {{{
+	头文件： <netinet/in.h>
+
+	struct in_addr {
+		in_addr_t	s_addr;
+	};
+
+	struct sockaddr_in {
+		uint8_t         sin_len;
+		sa_family_t	sin_family;
+		in_port_t	sin_port;
+
+		struct in_addr  sin_addr;
+		
+		char		sin_zero[8];
+	}
+  }}}
+
+* b开头的字符串操作函数(Berkeley)
+  {{{
+	# include <strings.h>
+	void bzero(void *dest, size_t mbytes);
+	void bcopy(const void *src, void *dest, size_t nbytes);
+	int bcmp(const void *ptr1, const void *ptr2, size_t nbytes);
+		返回：若相等则为0，否则为非0
+  }}}
+* mem开头的函数(ANSI C)
+  {{{
+  	# include <string.h>
+	void *memset(void *dest, int c, size_t len);
+		
+		记住memset最后两个参数顺序的方法之一是所有ANSI C的memXXX函数都
+	    需要一个长度参数，而且总是最后一个参数。
+		
+	void *memcpy(void *dest, const void *src, size_t nbytes);
+	
+		记住memcpy两个指针参数顺序的方法之一是记着它们是按照与C中的赋值
+	    顺序从左到右书写：
+	    	dest = src;
+	    	
+	int memcmp(const void *ptr1, const void *ptr2, size_t nbytes);
+		返回：若相等则为0，否则为<0 或 >0
+  }}}
+  
+==== 函数名中h代表(host), a代表address，p代表(presentation)，数值(numeric) ====
+
+* inet_aton、inet_addr和inet_ntoa函数
+  {{{
+	# include <arpa/inet.h>
+	int inet_aton(const char *strptr, struct in_addr *addrptr);
+		返回：若字符串有效则为1，否则为0
+	in_addr_t inet_addr(const char *strptr);
+		返回：若字符串有效则为32位二进制网络字节序的IPv4地址，否则为
+			INADDR_NONE(32个1，同4个255，广播地址,但是不能当作广
+			播地址来处理);
+	char *inet_ntoa(struct in_addr inaddr);
+		返回：指向一个点分十进制数串的指针。
+  }}}
+* inet_pton和inet_ntop函数
+  {{{
+	# include <arpa/inet.h>
+
+	int inet_pton(int family, const char *strptr, void *addrptr);
+		返回：若成功则为1，若输入不是有效的表达格式则为0，若出错则为-1
+	
+	const char *inet_ntop(int family, const void *addrptr, char *strptr, 
+			size_t len);
+		返回：若成功则为指向结果的指针，若出错则为NULL.
+  }}}}
