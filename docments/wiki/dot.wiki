@@ -1,4 +1,5 @@
 ==== Dot language ====
+Dot 教程： http://casatwy.com/shi-yong-dotyu-yan-he-graphvizhui-tu-fan-yi.html?utm_source=tuicool&utm_medium=referral
 {{{
 	/* 简单图例
 	graph graphname {

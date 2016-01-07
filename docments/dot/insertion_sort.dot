@@ -1,0 +1,60 @@
+// dot -Tpng test.dot -o graph1.png
+digraph graphname {
+	// rankdir = LR;
+
+	node [color=black, fontname=Courier, 
+		shape=box, 
+		width=1.3,
+		height=.5,
+		fontsize=9] // All nodes will this shape and colour 
+	edge [color=blue, style=dashed] // All the lines look like this
+
+	start	[label="输入一个长度为N的数\n组data[N], 初始化i=0",
+			fixedsize=true,
+			fontsize=8]
+	isdone  [label="i < len(data)", shape=diamond, 
+			fixedsize=true]
+	done	[label="Done", style=filled, fillcolor=green]
+
+	j	[label="tmpv= data[i]\nj = i - 1", 
+			height=.3,
+			width=1.1,
+			]
+	isjright  [label="j > 0 &&\ndata[j] > tmpv" 
+			shape=diamond,
+			width=1.5,
+			height=.6,
+			fixedsize=true];
+
+	swap	[label="data[j + 1] = tmpv\ni++", 
+			height=.3,
+			width=1.1]
+
+	start -> isdone
+	isdone -> done [label="False", fontcolor=Red, color=Red];
+	isdone -> j    [label="True", fontcolor=blue]
+	j	-> isjright
+	isjright -> swap [label="False", 
+		 		fontcolor=red, 
+				color=red]
+	swap -> isdone
+
+	exchange [label="data[j+1] = data[j]\nj--",
+			height=.3,
+			width=1.1]
+
+	isjright -> exchange [label="True", fontcolor=blue]
+	exchange -> swap
+
+}
+/*
+		for (int i = 0; i < len(data); i++) {
+			tmp_of_now = data[i];
+			last_array = i - 1;
+			while (last_array > 0 && data[last_array] > tmp_of_now) {
+				data[last_array+1] = data[last_array];
+				last_array--;
+			}
+			data[last_array+1] = tmp_of_now;
+		}
+*/
