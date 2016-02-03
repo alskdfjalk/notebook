@@ -1,0 +1,63 @@
+* Hadoop 基础教程
+** 单节点安装步骤
+*** 包依赖
+    1. 安装并配置java-1.6
+       1) 下载地址： http://www.java.com/zh_CN/download/linux_manual.jsp
+       2) 需要指定的变量:
+	  #+BEGIN_SRC shell-script
+	    export JAVA_HOME="/opt/base/jdk"
+	    export PATH=${PATH}:/opt/base/jdk/bin
+	    export CLASSPATH="$JAVA_HOME/lib"
+	  #+END_SRC
+    2. ssh 免密码登录
+       1) ssh-keygen
+       2) ssh-copy-id ~/.ssh/id-<TAB>.pub user@hostname
+    3. hadoop包
+       1) 下载地址： http://mirrors.hust.edu.cn/apache/hadoop/common/stable/
+*** 配置文件
+   1. etc/core-site.xml
+      核心配置文件，以下示例中配置的是hdfa的监听地址、端口
+      #+BEGIN_SRC conf
+	<configuration>
+	   <property>
+	      <name>fs.default.name</name>
+	      <value>hdfs://localhost:9000</value>
+	   </property>
+	</configuration>
+      #+END_SRC
+   2. etc/hdfs-site.xml
+      HDFS配置文件，示例配置中配置的是备份数为1
+      #+BEGIN_SRC conf
+	<configuration>
+	   <property>
+	      <name>dfs.replication</name>
+	      <value>1</value>
+	   </property>
+	</configuration>
+      #+END_SRC
+   3. etc/mapred-site.xml
+      MapReduce配置文件，以下配置了Jobracker的地址、端口
+      #+BEGIN_SRC conf
+	<configuration>
+	   <property>
+	      <name>mapred.job.tracker</name>
+	      <value>localhost:9001</value>
+	   </property>
+	</configuration>
+      #+END_SRC
+*** 配置步骤
+    1. 格式化文件系统
+       #+BEGIN_SRC shell-script
+	 bin/hadoop NameNode -format
+       #+END_SRC
+    2. 启动所有进程
+       #+BEGIN_SRC shell-script
+	 bin/start-all.sh
+       #+END_SRC
+    3. 浏览器验证地址
+       1) http://address:50030/
+       2) http://address:50070/
+** 集群配置
+*** 网络拓扑
+    rack可以理解为机柜，获取区域，每个rack一个集群
+    1.
