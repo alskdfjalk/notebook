@@ -11,7 +11,7 @@
 	  #+END_SRC
     2. ssh 免密码登录
        1) ssh-keygen
-       2) ssh-copy-id ~/.ssh/id-<TAB>.pub user@hostname
+       2) ssh-copy-id ~/.ssh/id_rsa.pub user@hostname
     3. hadoop包
        1) 下载地址： http://mirrors.hust.edu.cn/apache/hadoop/common/stable/
 *** 配置文件
@@ -57,7 +57,128 @@
     3. 浏览器验证地址
        1) http://address:50030/
        2) http://address:50070/
-** 集群配置
-*** 网络拓扑
-    rack可以理解为机柜，获取区域，每个rack一个集群
-    1.
+** 网络拓扑
+*** 对hadoop配置网络拓扑的意义
+     1) rack可以理解为机柜（机房），每个rack一个集群，可以节省带宽，提高计算速度
+     2) HDFS可以更加智能地部署数据副本，并在性能和可靠性间找到最优的平衡。
+*** 拓扑的实现
+     1) Hadoop会确定节点地址和其网络位置的映射
+	此映射在代码中通过Java接口的 DNSToSwitchMaping 实现
+	#+BEGIN_SRC java
+	  public interface DNSToSwitchMaping {
+		  public List<String> resolve(List<String> names);
+	  }
+	#+END_SRC
+     2) 系统有意个默认的接口实现 ScriptBasedMapping
+	它可以运行用户自定义的一个脚本去完成映射，如果没有定义，将会把所有机器节点映射到一个
+	单独的网络未知中默认的机架上。
+** 配置文件介绍(详细)
+*** 主要配置文件
+    #+BEGIN_SRC conf
+      etc/core-site.xml
+      etc/hdfs-site.xml
+      etc/mapred-site.xml
+      etc/mapred-queues.xml
+    #+END_SRC
+*** 实现方式
+    1. 通过 org.apache.hadoop.conf.configuration 来读取配置文件
+    2. 通过资源(resource)定位
+    3. 每个资源由一系列name/value以XML文件的形式构成
+    4. 它以一个字符串命名或以Hadoop定义的path类命名(这个类是用于定义文件系统内的文件)
+    5. 如果是以字符串命名，会通过classpath调用此文件。如果已path类命名，会在本地文件系统中搜索文件
+*** 资源设定特点
+    1. 允许定义最终参数(final parameters)
+       */如果任意资源声明了final这个值，那么之后加载的任何资源都不能改变这个值/*
+       #+BEGIN_SRC conf
+	 <property>
+	    <name>dfs.client.buffer.dir</name>
+	    <value>/tmp/hadoop/dfs/client</value>
+	    <final>true</final>
+	 </property>
+       #+END_SRC
+    2. 允许传递参数
+       */当tenpdir被调用时，basedir会作为值被调用/*
+       #+BEGIN_SRC conf
+	 <property>
+	    <name>basedir</name>
+	    <value>/user/${user.name}</value>
+	 <property>
+
+	 <property>
+	    <name>tempdir</name>
+	    <value>${basedir}/tmp</value>
+	 </property>
+       #+END_SRC
+    3. 针对不同的守护进程分别设置
+       前面提到，可以通过 etc/hadoop-env.sh 为 Hadoop 的守护进程设置
+       环境变量。一般来说，至少需要在这里设置在主机上安装的JDK的位置（JAVA_HOME)。
+       也可以通过 HADOOP_*_OPTS 对不同的守护进程分别进行设置。
+	| 守护进程          | 配置选项（Configure Options)  |
+	|-------------------+-------------------------------|
+	| NameNode          | HADOOP_NAMENODE_OPTS          |
+	| DataNode          | HADOOP_DATANODE_OPTS          |
+	| SecondaryNameNode | HADOOP_SECONDARYNAMENODE_OPTS |
+	| JobTracker        | HADOOP_JOBTRACKER_OPTS        |
+	| TaskTracker       | HADOOP_TASKTRACKER_OPTS       |
+
+       如果想设置 NameNode 使用 parallelGC :
+       #+BEGIN_SRC shell-script
+	 export HADOOP_NameNode_OPTS="-XX:+UseParallelGC ${HADOOP_NAMENODE_OPTS}"
+       #+END_SRC
+*** 配置文件可选参数列表
+    1. 配置文件core-site.xml
+	| 参数（Parameter） | 值（Value）               |
+	|-------------------+---------------------------|
+	| fs.default.name   | NameNode 的 IP 地址及端口 |
+    2. 配置文件hdfs-site.xml
+	| 参数（Parameter | 值（Value）                           |
+	|-----------------+---------------------------------------|
+	| dfs.name.dir    | NameNode 存储名字空间及汇报日志的位置 |
+	| dfs.data.dir    | DataNode 存储数据块的位置             |
+    3. 配置文件 mapred-site.xml
+	| 参数（Parameter）                                  | 值（Value）                                                |
+	|----------------------------------------------------+------------------------------------------------------------|
+	| mapreduce.jobtracker.address                       | JobTracker的IP地址及端口                                   |
+	| mapreduce.jobtracker.system.dir                    | MapReduce在HDFS上存储文件的位置，例如/Hadoop/mapred/system |
+	| mapreduce.cluster.local.dir                        | MapReduce的缓存数据存储在文件系统中的位置                  |
+	| mapred.tasktracker.{map\vert{}reduce}.tasks.maximum         | 每台TaskTracker所能运行的Map 或 Reduce 的 task 最大数量    |
+	| dfs.hosts/dfs.hosts.exclude                        | 允许或禁止的 DataNode 列表                                 |
+	| mapreduce.jobtracker.hosts.filename/               | 允许或禁止的 TaskTrackers 列表                             |
+	| mapreduce.jobtracker.hosts.exclude.filename        | 允许或禁止的 TaskTrackers 列表                             |
+	| mapreduce.cluster.job-authorization-enable         | 布尔类型，表示 Job 存取控制列表是否支持对Job的观察和修改   |
+    4. 配置文件 mapred-queues.xml
+	| 标签或属性（Tag/Attribute） | 值（Value）                                                                              | 是否可刷新   |
+	|-----------------------------+------------------------------------------------------------------------------------------+--------------|
+	| queues                      | 配置文件的根元素                                                                         | 无意义       |
+	| aclsEnabled                 | 布尔类型<queues>标签的属性，表示存取控制列表是否支持控制Job的提交及所有queue的管理       | 是           |
+	| queue                       | <queues>的子元素，定义系统中的queue                                                      | 无意义       |
+	| name                        | <queue>的子元素，代表名字                                                                | 否           |
+	| state                       | <queue>的子元素，代表queue的状态                                                         | 是           |
+	| acl-submit-job              | <queue>的子元素，定义一个能提交Job到该queue的用户或组的名单列表                          | 是           |
+	| acl-administer-job          | <queue>的子元素，定义一个能更改Job的优先级或能杀死已提交到该queue的Job用户或组的名单列表 | 是           |
+	| properties                  | <queues>的子元素，定义优先调度规则                                                       | 无意义       |
+	| property                    | <properties>的子元素                                                                     | 无意义       |
+	| key                         | <property>的子元素                                                                       | 调度程序指定 |
+	| value                       | <property>的属性                                                                         | 调度程序指定 |
+
+       本配置文件用来设置MapReduce系统的队列顺序。queues 是 JobTracker 中的一个抽象概念，可以在一定程度上管理Job，
+       因此它为管理员提供了一种管理Job的方式。这种控制是常见且有效的，例如通过这种管理可以把不同的用户划分为不同的组，
+       或分别赋予他们不同的级别，并且会优先执行高级别用户提交的Job。
+       按照这个思想，很容易想到三种原则
+       1) 同一类用户提交的Job统一提交到同一个queue中
+       2) 运行时间较长的Job可以提交到同一个queue中
+       3) 把很快就能运行完成的Job划分到一个queue中，并且限制queue中Job的数量上限
+** 集群搭建（三台）
+*** 规划地址、身份
+      |          ip |        |          |             |
+      |-------------+--------+----------+-------------|
+      | 10.37.128.2 | master | namenode | jobtracker  |
+      | 10.37.128.3 | slave  | datanode | tasktracker |
+      | 10.37.128.4 | slave  | datanode | tasktracker |
+*** 环境配置
+    1. JAVA环境
+    2. 修改主机名及所有三台机器的域名地址映射(/etc/hosts)
+    3. 配置互相无密码登录
+*** 修改Hadoop配置文件
+    1. hadoop-env.sh
+       

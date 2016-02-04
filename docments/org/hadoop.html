@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>hadoop</title>
-<!-- 2016-02-03 三 19:15 -->
+<!-- 2016-02-04 四 16:43 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="CrazyJerry" />
@@ -185,6 +185,27 @@ for the JavaScript code in this tag.
 <li><a href="#sec-1-1-3">1.1.3. 配置步骤</a></li>
 </ul>
 </li>
+<li><a href="#sec-1-2">1.2. 网络拓扑</a>
+<ul>
+<li><a href="#sec-1-2-1">1.2.1. 对hadoop配置网络拓扑的意义</a></li>
+<li><a href="#sec-1-2-2">1.2.2. 拓扑的实现</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-3">1.3. 配置文件介绍(详细)</a>
+<ul>
+<li><a href="#sec-1-3-1">1.3.1. 主要配置文件</a></li>
+<li><a href="#sec-1-3-2">1.3.2. 实现方式</a></li>
+<li><a href="#sec-1-3-3">1.3.3. 资源设定特点</a></li>
+<li><a href="#sec-1-3-4">1.3.4. 配置文件可选参数列表</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-4">1.4. 集群搭建（三台）</a>
+<ul>
+<li><a href="#sec-1-4-1">1.4.1. 规划地址、身份</a></li>
+<li><a href="#sec-1-4-2">1.4.2. 环境配置</a></li>
+<li><a href="#sec-1-4-3">1.4.3. 修改Hadoop配置文件</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -219,7 +240,7 @@ export CLASSPATH="$JAVA_HOME/lib"
 <ol class="org-ol">
 <li>ssh-keygen
 </li>
-<li>ssh-copy-id ~/.ssh/id-&lt;TAB&gt;.pub user@hostname
+<li>ssh-copy-id ~/.ssh/id_rsa.pub user@hostname
 </li>
 </ol>
 </li>
@@ -305,19 +326,460 @@ MapReduce配置文件，以下配置了Jobracker的地址、端口
 </ol>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> 网络拓扑</h3>
+<div class="outline-text-3" id="text-1-2">
+</div><div id="outline-container-sec-1-2-1" class="outline-4">
+<h4 id="sec-1-2-1"><span class="section-number-4">1.2.1</span> 对hadoop配置网络拓扑的意义</h4>
+<div class="outline-text-4" id="text-1-2-1">
+<ol class="org-ol">
+<li>rack可以理解为机柜（机房），每个rack一个集群，可以节省带宽，提高计算速度
+</li>
+<li>HDFS可以更加智能地部署数据副本，并在性能和可靠性间找到最优的平衡。
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-1-2-2" class="outline-4">
+<h4 id="sec-1-2-2"><span class="section-number-4">1.2.2</span> 拓扑的实现</h4>
+<div class="outline-text-4" id="text-1-2-2">
+<ol class="org-ol">
+<li>Hadoop会确定节点地址和其网络位置的映射
+此映射在代码中通过Java接口的 DNSToSwitchMaping 实现
+<div class="org-src-container">
 
+<pre class="src src-java">public interface DNSToSwitchMaping {
+	public List&lt;String&gt; resolve(List&lt;String&gt; names);
+}
+</pre>
+</div>
+</li>
+<li>系统有意个默认的接口实现 ScriptBasedMapping
+它可以运行用户自定义的一个脚本去完成映射，如果没有定义，将会把所有机器节点映射到一个
+单独的网络未知中默认的机架上。
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> 配置文件介绍(详细)</h3>
+<div class="outline-text-3" id="text-1-3">
+</div><div id="outline-container-sec-1-3-1" class="outline-4">
+<h4 id="sec-1-3-1"><span class="section-number-4">1.3.1</span> 主要配置文件</h4>
+<div class="outline-text-4" id="text-1-3-1">
+<div class="org-src-container">
+
+<pre class="src src-conf">etc/core-site.xml
+etc/hdfs-site.xml
+etc/mapred-site.xml
+etc/mapred-queues.xml
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-1-3-2" class="outline-4">
+<h4 id="sec-1-3-2"><span class="section-number-4">1.3.2</span> 实现方式</h4>
+<div class="outline-text-4" id="text-1-3-2">
+<ol class="org-ol">
+<li>通过 org.apache.hadoop.conf.configuration 来读取配置文件
+</li>
+<li>通过资源(resource)定位
+</li>
+<li>每个资源由一系列name/value以XML文件的形式构成
+</li>
+<li>它以一个字符串命名或以Hadoop定义的path类命名(这个类是用于定义文件系统内的文件)
+</li>
+<li>如果是以字符串命名，会通过classpath调用此文件。如果已path类命名，会在本地文件系统中搜索文件
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-1-3-3" class="outline-4">
+<h4 id="sec-1-3-3"><span class="section-number-4">1.3.3</span> 资源设定特点</h4>
+<div class="outline-text-4" id="text-1-3-3">
+<ol class="org-ol">
+<li>允许定义最终参数(final parameters)
+<b><i>如果任意资源声明了final这个值，那么之后加载的任何资源都不能改变这个值</i></b>
+<div class="org-src-container">
+
+<pre class="src src-conf">&lt;property&gt;
+   &lt;name&gt;dfs.client.buffer.dir&lt;/name&gt;
+   &lt;value&gt;/tmp/hadoop/dfs/client&lt;/value&gt;
+   &lt;final&gt;true&lt;/final&gt;
+&lt;/property&gt;
+</pre>
+</div>
+</li>
+<li>允许传递参数
+<b><i>当tenpdir被调用时，basedir会作为值被调用</i></b>
+<div class="org-src-container">
+
+<pre class="src src-conf">&lt;property&gt;
+   &lt;name&gt;basedir&lt;/name&gt;
+   &lt;value&gt;/user/${user.name}&lt;/value&gt;
+&lt;property&gt;
+
+&lt;property&gt;
+   &lt;name&gt;tempdir&lt;/name&gt;
+   &lt;value&gt;${basedir}/tmp&lt;/value&gt;
+&lt;/property&gt;
+</pre>
+</div>
+</li>
+<li>针对不同的守护进程分别设置
+前面提到，可以通过 etc/hadoop-env.sh 为 Hadoop 的守护进程设置
+环境变量。一般来说，至少需要在这里设置在主机上安装的JDK的位置（JAVA_HOME)。
+也可以通过 HADOOP_*_OPTS 对不同的守护进程分别进行设置。
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">守护进程</th>
+<th scope="col" class="left">配置选项（Configure Options)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">NameNode</td>
+<td class="left">HADOOP_NAMENODE_OPTS</td>
+</tr>
+
+<tr>
+<td class="left">DataNode</td>
+<td class="left">HADOOP_DATANODE_OPTS</td>
+</tr>
+
+<tr>
+<td class="left">SecondaryNameNode</td>
+<td class="left">HADOOP_SECONDARYNAMENODE_OPTS</td>
+</tr>
+
+<tr>
+<td class="left">JobTracker</td>
+<td class="left">HADOOP_JOBTRACKER_OPTS</td>
+</tr>
+
+<tr>
+<td class="left">TaskTracker</td>
+<td class="left">HADOOP_TASKTRACKER_OPTS</td>
+</tr>
+</tbody>
+</table>
 
 <p>
-asldkfjalksdfj
+如果想设置 NameNode 使用 parallelGC :
 </p>
+<div class="org-src-container">
+
+<pre class="src src-shell-script">export HADOOP_NameNode_OPTS="-XX:+UseParallelGC ${HADOOP_NAMENODE_OPTS}"
+</pre>
 </div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-1-3-4" class="outline-4">
+<h4 id="sec-1-3-4"><span class="section-number-4">1.3.4</span> 配置文件可选参数列表</h4>
+<div class="outline-text-4" id="text-1-3-4">
+<ol class="org-ol">
+<li>配置文件core-site.xml
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">参数（Parameter）</th>
+<th scope="col" class="left">值（Value）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">fs.default.name</td>
+<td class="left">NameNode 的 IP 地址及端口</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>配置文件hdfs-site.xml
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">参数（Parameter</th>
+<th scope="col" class="left">值（Value）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">dfs.name.dir</td>
+<td class="left">NameNode 存储名字空间及汇报日志的位置</td>
+</tr>
+
+<tr>
+<td class="left">dfs.data.dir</td>
+<td class="left">DataNode 存储数据块的位置</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>配置文件 mapred-site.xml
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">参数（Parameter）</th>
+<th scope="col" class="left">值（Value）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">mapreduce.jobtracker.address</td>
+<td class="left">JobTracker的IP地址及端口</td>
+</tr>
+
+<tr>
+<td class="left">mapreduce.jobtracker.system.dir</td>
+<td class="left">MapReduce在HDFS上存储文件的位置，例如/Hadoop/mapred/system</td>
+</tr>
+
+<tr>
+<td class="left">mapreduce.cluster.local.dir</td>
+<td class="left">MapReduce的缓存数据存储在文件系统中的位置</td>
+</tr>
+
+<tr>
+<td class="left">mapred.tasktracker.{map&vert;reduce}.tasks.maximum</td>
+<td class="left">每台TaskTracker所能运行的Map 或 Reduce 的 task 最大数量</td>
+</tr>
+
+<tr>
+<td class="left">dfs.hosts/dfs.hosts.exclude</td>
+<td class="left">允许或禁止的 DataNode 列表</td>
+</tr>
+
+<tr>
+<td class="left">mapreduce.jobtracker.hosts.filename/</td>
+<td class="left">允许或禁止的 TaskTrackers 列表</td>
+</tr>
+
+<tr>
+<td class="left">mapreduce.jobtracker.hosts.exclude.filename</td>
+<td class="left">允许或禁止的 TaskTrackers 列表</td>
+</tr>
+
+<tr>
+<td class="left">mapreduce.cluster.job-authorization-enable</td>
+<td class="left">布尔类型，表示 Job 存取控制列表是否支持对Job的观察和修改</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>配置文件 mapred-queues.xml
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">标签或属性（Tag/Attribute）</th>
+<th scope="col" class="left">值（Value）</th>
+<th scope="col" class="left">是否可刷新</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">queues</td>
+<td class="left">配置文件的根元素</td>
+<td class="left">无意义</td>
+</tr>
+
+<tr>
+<td class="left">aclsEnabled</td>
+<td class="left">布尔类型&lt;queues&gt;标签的属性，表示存取控制列表是否支持控制Job的提交及所有queue的管理</td>
+<td class="left">是</td>
+</tr>
+
+<tr>
+<td class="left">queue</td>
+<td class="left">&lt;queues&gt;的子元素，定义系统中的queue</td>
+<td class="left">无意义</td>
+</tr>
+
+<tr>
+<td class="left">name</td>
+<td class="left">&lt;queue&gt;的子元素，代表名字</td>
+<td class="left">否</td>
+</tr>
+
+<tr>
+<td class="left">state</td>
+<td class="left">&lt;queue&gt;的子元素，代表queue的状态</td>
+<td class="left">是</td>
+</tr>
+
+<tr>
+<td class="left">acl-submit-job</td>
+<td class="left">&lt;queue&gt;的子元素，定义一个能提交Job到该queue的用户或组的名单列表</td>
+<td class="left">是</td>
+</tr>
+
+<tr>
+<td class="left">acl-administer-job</td>
+<td class="left">&lt;queue&gt;的子元素，定义一个能更改Job的优先级或能杀死已提交到该queue的Job用户或组的名单列表</td>
+<td class="left">是</td>
+</tr>
+
+<tr>
+<td class="left">properties</td>
+<td class="left">&lt;queues&gt;的子元素，定义优先调度规则</td>
+<td class="left">无意义</td>
+</tr>
+
+<tr>
+<td class="left">property</td>
+<td class="left">&lt;properties&gt;的子元素</td>
+<td class="left">无意义</td>
+</tr>
+
+<tr>
+<td class="left">key</td>
+<td class="left">&lt;property&gt;的子元素</td>
+<td class="left">调度程序指定</td>
+</tr>
+
+<tr>
+<td class="left">value</td>
+<td class="left">&lt;property&gt;的属性</td>
+<td class="left">调度程序指定</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+本配置文件用来设置MapReduce系统的队列顺序。queues 是 JobTracker 中的一个抽象概念，可以在一定程度上管理Job，
+因此它为管理员提供了一种管理Job的方式。这种控制是常见且有效的，例如通过这种管理可以把不同的用户划分为不同的组，
+或分别赋予他们不同的级别，并且会优先执行高级别用户提交的Job。
+按照这个思想，很容易想到三种原则
+</p>
+<ol class="org-ol">
+<li>同一类用户提交的Job统一提交到同一个queue中
+</li>
+<li>运行时间较长的Job可以提交到同一个queue中
+</li>
+<li>把很快就能运行完成的Job划分到一个queue中，并且限制queue中Job的数量上限
+</li>
+</ol>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> 集群搭建（三台）</h3>
+<div class="outline-text-3" id="text-1-4">
+</div><div id="outline-container-sec-1-4-1" class="outline-4">
+<h4 id="sec-1-4-1"><span class="section-number-4">1.4.1</span> 规划地址、身份</h4>
+<div class="outline-text-4" id="text-1-4-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="right" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="right">ip</th>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">&#xa0;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="right">10.37.128.2</td>
+<td class="left">master</td>
+<td class="left">namenode</td>
+<td class="left">jobtracker</td>
+</tr>
+
+<tr>
+<td class="right">10.37.128.3</td>
+<td class="left">slave</td>
+<td class="left">datanode</td>
+<td class="left">tasktracker</td>
+</tr>
+
+<tr>
+<td class="right">10.37.128.4</td>
+<td class="left">slave</td>
+<td class="left">datanode</td>
+<td class="left">tasktracker</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-sec-1-4-2" class="outline-4">
+<h4 id="sec-1-4-2"><span class="section-number-4">1.4.2</span> 环境配置</h4>
+<div class="outline-text-4" id="text-1-4-2">
+<ol class="org-ol">
+<li>JAVA环境
+</li>
+<li>修改主机名及所有三台机器的域名地址映射(/etc/hosts)
+</li>
+<li>配置互相无密码登录
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-1-4-3" class="outline-4">
+<h4 id="sec-1-4-3"><span class="section-number-4">1.4.3</span> 修改Hadoop配置文件</h4>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: CrazyJerry</p>
-<p class="date">Created: 2016-02-03 三 19:15</p>
+<p class="date">Created: 2016-02-04 四 16:43</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
