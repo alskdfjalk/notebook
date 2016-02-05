@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>hadoop</title>
-<!-- 2016-02-04 四 16:43 -->
+<!-- 2016-02-05 五 18:29 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="CrazyJerry" />
@@ -176,7 +176,7 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1. Hadoop 基础教程</a>
+<li><a href="#sec-1">1. Hadoop 安装、配置、启动</a>
 <ul>
 <li><a href="#sec-1-1">1.1. 单节点安装步骤</a>
 <ul>
@@ -204,15 +204,24 @@ for the JavaScript code in this tag.
 <li><a href="#sec-1-4-1">1.4.1. 规划地址、身份</a></li>
 <li><a href="#sec-1-4-2">1.4.2. 环境配置</a></li>
 <li><a href="#sec-1-4-3">1.4.3. 修改Hadoop配置文件</a></li>
+<li><a href="#sec-1-4-4">1.4.4. 启动Hadoop</a></li>
+<li><a href="#sec-1-4-5">1.4.5. 查看状态</a></li>
+<li><a href="#sec-1-4-6">1.4.6. （重）启动</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a href="#sec-2">2. MapReduce 计算模型</a>
+<ul>
+<li><a href="#sec-2-1">2.1. Hadoop 流</a></li>
+<li><a href="#sec-2-2">2.2. 流工作原理</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> Hadoop 基础教程</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> Hadoop 安装、配置、启动</h2>
 <div class="outline-text-2" id="text-1">
 </div><div id="outline-container-sec-1-1" class="outline-3">
 <h3 id="sec-1-1"><span class="section-number-3">1.1</span> 单节点安装步骤</h3>
@@ -773,13 +782,168 @@ etc/mapred-queues.xml
 </div>
 <div id="outline-container-sec-1-4-3" class="outline-4">
 <h4 id="sec-1-4-3"><span class="section-number-4">1.4.3</span> 修改Hadoop配置文件</h4>
+<div class="outline-text-4" id="text-1-4-3">
+<ol class="org-ol">
+<li>hadoop-env.sh
+<div class="org-src-container">
+
+<pre class="src src-shell-script">export JAVA_HOME
+</pre>
+</div>
+</li>
+<li>core-site.xml
+<div class="org-src-container">
+
+<pre class="src src-xml">&lt;?xml version="1.0"?&gt;
+&lt;?xmlstylesheet type="text/xsl" href="configuration.xsl"?&gt;
+&lt;!-- Put site-specific property overrides in this file. --&gt;
+&lt;configuration&gt;
+  &lt;property&gt;
+    &lt;name&gt;fs.default.name&lt;/name&gt;
+    &lt;value&gt;hdfs://master:9000&lt;/value&gt;
+  &lt;/property&gt;
+  &lt;property&gt;
+    &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+    &lt;value&gt;/tmp&lt;/value&gt;
+  &lt;/property&gt;
+&lt;/configuration&gt;
+</pre>
+</div>
+</li>
+<li>hdfs-site.xml
+<div class="org-src-container">
+
+<pre class="src src-xml">&lt;?xml version="1.0"?&gt;
+&lt;?xml-stylesheet type="text/xsl" href="configuration.xsl"?&gt;
+&lt;!-- Put site-specific property overrides in this file. --&gt;
+&lt;configuration&gt;
+  &lt;property&gt;
+    &lt;name&gt;dfs.replication&lt;/name&gt;
+    &lt;value&gt;2&lt;/value&gt;
+  &lt;/property&gt;
+&lt;/configuration&gt;
+</pre>
+</div>
+</li>
+<li>mapred-site.xml
+<div class="org-src-container">
+
+<pre class="src src-xml">&lt;?xml version="1.0"?&gt;
+&lt;?xml-stylesheet type="text/xsl" href="configuration.xsl"?&gt;
+&lt;!-- Put site-specific property overrides in this file. --&gt;
+&lt;configuration&gt;
+  &lt;property&gt;
+    &lt;name&gt;mapred.job.tracker&lt;/name&gt;
+    &lt;value&gt;master:9001&lt;/value&gt;
+  &lt;/property&gt;
+&lt;/configuration&gt;
+</pre>
+</div>
+</li>
+<li>masters
+<div class="org-src-container">
+
+<pre class="src src-conf">master
+</pre>
+</div>
+</li>
+<li>slaves
+<div class="org-src-container">
+
+<pre class="src src-conf">slave1
+slave2
+</pre>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-1-4-4" class="outline-4">
+<h4 id="sec-1-4-4"><span class="section-number-4">1.4.4</span> 启动Hadoop</h4>
+<div class="outline-text-4" id="text-1-4-4">
+<div class="org-src-container">
+
+<pre class="src src-shell">bin/hadoop NameNode -format
+bin/start-all.sh
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-1-4-5" class="outline-4">
+<h4 id="sec-1-4-5"><span class="section-number-4">1.4.5</span> 查看状态</h4>
+<div class="outline-text-4" id="text-1-4-5">
+<ol class="org-ol">
+<li>命令行
+<div class="org-src-container">
+
+<pre class="src src-shell">bin/hadoop dfsadmin -report
+</pre>
+</div>
+</li>
+<li>http
+<div class="org-src-container">
+
+<pre class="src src-shell">http://master:50070
+http://master:50030
+</pre>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-1-4-6" class="outline-4">
+<h4 id="sec-1-4-6"><span class="section-number-4">1.4.6</span> （重）启动</h4>
+<div class="outline-text-4" id="text-1-4-6">
+<div class="org-src-container">
+
+<pre class="src src-shell">bin/hadoop-daemon.sh start datanode
+bin/hadoop-daemon.sh start jobtracker
+bin/hadoop-daemon.sh --config ./conf start datanode
+bin/hadoop-daemon.sh --config ./conf start tasktracker
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> MapReduce 计算模型</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Hadoop 流</h3>
+<div class="outline-text-3" id="text-2-1">
+<ol class="org-ol">
+<li>命令
+<div class="org-src-container">
+
+<pre class="src src-shell"> bin/hadoop jar contrib/streaming/hadoop-0.20.2-streaming.jar \
+     -input input --output output -mapper cat -reducer wc
+
+-input      指明输入文件路径
+-output     指明输出文件路径
+-mapper     指定map函数
+-reducer    指定reduce函数
+</pre>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> 流工作原理</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+当一个可执行文件作为 Mapper 时，每一个 Map 任务会以一个独立的进程启动这个可执行文件，然后在
+Map 任务运行时，会把输入切分成行提供给可执行文件，并作为它的标准输入(stdin)内容。可执行文件
+运行出结果时，Map从标准输出（stdout）中收集数据，并将其转化为&lt;key, value&gt;，作为Map输出。
+</p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: CrazyJerry</p>
-<p class="date">Created: 2016-02-04 四 16:43</p>
+<p class="date">Created: 2016-02-05 五 18:29</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

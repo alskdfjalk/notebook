@@ -1,4 +1,4 @@
-* Hadoop 基础教程
+* Hadoop 安装、配置、启动
 ** 单节点安装步骤
 *** 包依赖
     1. 安装并配置java-1.6
@@ -181,4 +181,93 @@
     3. 配置互相无密码登录
 *** 修改Hadoop配置文件
     1. hadoop-env.sh
-       
+       #+BEGIN_SRC shell-script
+	 export JAVA_HOME
+       #+END_SRC
+    2. core-site.xml
+       #+BEGIN_SRC xml
+	 <?xml version="1.0"?>
+	 <?xmlstylesheet type="text/xsl" href="configuration.xsl"?>
+	 <!-- Put site-specific property overrides in this file. -->
+	 <configuration>
+	   <property>
+	     <name>fs.default.name</name>
+	     <value>hdfs://master:9000</value>
+	   </property>
+	   <property>
+	     <name>hadoop.tmp.dir</name>
+	     <value>/tmp</value>
+	   </property>
+	 </configuration>
+       #+END_SRC
+    3. hdfs-site.xml
+       #+BEGIN_SRC xml
+	 <?xml version="1.0"?>
+	 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+	 <!-- Put site-specific property overrides in this file. -->
+	 <configuration>
+	   <property>
+	     <name>dfs.replication</name>
+	     <value>2</value>
+	   </property>
+	 </configuration>
+       #+END_SRC
+    4. mapred-site.xml
+       #+BEGIN_SRC xml
+	 <?xml version="1.0"?>
+	 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+	 <!-- Put site-specific property overrides in this file. -->
+	 <configuration>
+	   <property>
+	     <name>mapred.job.tracker</name>
+	     <value>master:9001</value>
+	   </property>
+	 </configuration>
+       #+END_SRC
+    5. masters
+       #+BEGIN_SRC conf
+	 master
+       #+END_SRC
+    6. slaves
+       #+BEGIN_SRC conf
+	 slave1
+	 slave2
+       #+END_SRC
+*** 启动Hadoop
+    #+BEGIN_SRC shell
+      bin/hadoop NameNode -format
+      bin/start-all.sh
+    #+END_SRC
+*** 查看状态
+    1. 命令行
+      #+BEGIN_SRC shell
+	bin/hadoop dfsadmin -report
+      #+END_SRC
+    2. http
+       #+BEGIN_SRC shell
+	 http://master:50070
+	 http://master:50030
+       #+END_SRC
+*** （重）启动
+    #+BEGIN_SRC shell
+      bin/hadoop-daemon.sh start datanode
+      bin/hadoop-daemon.sh start jobtracker
+      bin/hadoop-daemon.sh --config ./conf start datanode
+      bin/hadoop-daemon.sh --config ./conf start tasktracker
+    #+END_SRC
+* MapReduce 计算模型
+** Hadoop 流
+   1. 命令
+      #+BEGIN_SRC shell
+	 bin/hadoop jar contrib/streaming/hadoop-0.20.2-streaming.jar \
+	     -input input --output output -mapper cat -reducer wc
+
+	-input      指明输入文件路径
+	-output     指明输出文件路径
+	-mapper     指定map函数
+	-reducer    指定reduce函数
+      #+END_SRC
+** 流工作原理
+   当一个可执行文件作为 Mapper 时，每一个 Map 任务会以一个独立的进程启动这个可执行文件，然后在
+   Map 任务运行时，会把输入切分成行提供给可执行文件，并作为它的标准输入(stdin)内容。可执行文件
+   运行出结果时，Map从标准输出（stdout）中收集数据，并将其转化为<key, value>，作为Map输出。
