@@ -1,0 +1,152 @@
+* 定义<br/>
+  {{{
+	生活实例：
+		插入排序的工作方式像许多人排序一手扑克牌。开始时，我们的左手为空
+	并且桌子上的牌面向下。然后，我们没次从桌子上拿走一张牌并将它插入左手中正
+	确的位置，我们从右到左将它与已在手中的拍总是排序好的, 原来这些牌是桌子上
+	牌堆中顶部的牌。
+
+	代码：
+		#define int_len(data) sizeof(data) / sizeof(int)
+		
+		int data[] = {5, 1, 3, 9, 2, 8, 6, 7, 4};
+		int j;
+		
+		for (int i = 0; i < int_len(data); i++) {
+			tmpv = data[i];
+			j = i - 1;
+			while (j >= 0 && data[j] > tmpv) {
+				data[j+1] = data[j];
+				j--;
+			}
+			data[j+1] = tmpv;
+		}
+  }}}
+* 流程图<br/>
+  {{../img/insertion_sort.png|插入排序算法流程图}}
+  
+* 结果
+  {{{
+	5 1 3 9 2 8 6 7 4
+	5 5 3 9 2 8 6 7 4
+	1 5 3 9 2 8 6 7 4
+	1 5 5 9 2 8 6 7 4
+	1 3 5 9 2 8 6 7 4
+	1 3 5 9 2 8 6 7 4
+	1 3 5 9 9 8 6 7 4
+	1 3 5 5 9 8 6 7 4
+	1 3 3 5 9 8 6 7 4
+	1 2 3 5 9 8 6 7 4
+	1 2 3 5 9 9 6 7 4
+	1 2 3 5 8 9 6 7 4
+	1 2 3 5 8 9 9 7 4
+	1 2 3 5 8 8 9 7 4
+	1 2 3 5 6 8 9 7 4
+	1 2 3 5 6 8 9 9 4
+	1 2 3 5 6 8 8 9 4
+	1 2 3 5 6 7 8 9 4
+	1 2 3 5 6 7 8 9 9
+	1 2 3 5 6 7 8 8 9
+	1 2 3 5 6 7 7 8 9
+	1 2 3 5 6 6 7 8 9
+	1 2 3 5 5 6 7 8 9
+	1 2 3 4 5 6 7 8 9
+	1
+	2
+	3
+	4
+	5
+	6
+	7
+	8
+	9
+  }}}
+ 
+* 原理
+  # 记住当前位置的值
+  # 然后开始循环当前值是否小于左侧的值
+  # 往前两两对比，如果靠右的值比靠左侧的值小
+  # 将左侧的值填充至右侧的位置
+  # 再次循环，如果条件不成立，将一开始记录的值填充至当前（左侧）位置
+  
+* 实例
+  # C:
+  	{{{
+
+  	      	#include <stdio.h>
+  	      	#define int_len(data) sizeof(data) / sizeof(int)
+  	      	
+  	      	int main(void)
+  	      	{
+  	      		int data[] = {5, 1, 3, 9, 2, 8, 6, 7, 4};
+  	      		int j;
+  	      		int tmpv;
+  	      	
+  	      		for (int i = 0; i < int_len(data); i++) {
+  	      	
+  	      			tmpv = data[i];
+  	      			j = i - 1;
+  	      	
+  	      			while (j >= 0 && data[j] > tmpv) {
+  	      				data[j+1] = data[j];
+  	      				j--;
+  	      	
+  	      				for (int i =0; i < int_len(data); i++) {
+  	      					printf("%d ", data[i]);
+  	      				}
+  	      			}
+  	      	
+  	      			data[j+1] = tmpv;
+  	      		}
+  	      		for (int i =0; i < int_len(data); i++) {
+  	      			printf("%d\n", data[i]);
+  	      		}
+  	      		return 0;
+  	      	}
+  	}}}
+  # Shell	
+  	{{{
+  	      	#!/bin/bash
+  	      
+  	      	insertion_sort()
+  	      	{
+  	      		data=(
+  	      			8 2 4 1 9 6 5 3 7
+  	      		)
+  	      		echo ${data[*]}
+  	      	
+  	      		for i in $(seq 0 ${#data[*]})
+  	      		do
+  	      			tmpv=${data[${i}]}
+  	      			j=$[i-1]
+  	      	
+  	      			[ "$i" -eq ${#data[*]} ] && break
+  	      	
+  	      			while [ "${j}" -ge 0 -a "${data[$j]}" -gt "${tmpv}" ]
+  	      			do
+  	      				data[$[j+1]]=${data[${j}]}
+  	      				j=$[j-1]
+  	      			done
+  	      			data[$[j+1]]=$tmpv
+  	      		done
+  	      	}	
+  	}}}
+  # Python	
+  	{{{
+  	      	def insertion_sort(data):
+  	      	        for i in range(len(data)):
+  	      	                tmpv = data[i]
+  	      	                j = i - 1
+  	      	
+  	      	                while j >= 0 and data[j] > tmpv:
+  	      	                        data[j + 1] = data[j]
+  	      	                        j -= 1
+  	      	
+  	      	                data[j + 1] = tmpv
+  	      	
+  	      	        print(data)
+  	      
+  	      	if __name__ == '__main__':
+  	      	        data = [9, 2, 5, 6, 7, 1, 4, 3, 8]
+  	      	        insertion_sort(data)
+  	}}}
