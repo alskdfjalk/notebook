@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>hadoop</title>
-<!-- 2016-02-05 五 19:38 -->
+<!-- 2016-02-16 二 15:41 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="CrazyJerry" />
@@ -916,19 +916,129 @@ bin/hadoop-daemon.sh --config ./conf start tasktracker
 <li>命令
 <div class="org-src-container">
 
-<pre class="src src-shell"> bin/hadoop jar contrib/streaming/hadoop-0.20.2-streaming.jar \
-     -input input --output output -mapper cat -reducer wc
-
--input      指明输入文件路径
--output     指明输出文件路径
--mapper     指定map函数
--reducer    指定reduce函数
+<pre class="src src-shell">bin/hadoop jar contrib/streaming/hadoop-0.20.2-streaming.jar \
+    -input &lt;inputfile&gt; -output outputdir -mapper cat -reducer wc
 </pre>
 </div>
+</li>
+<li>参数
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">参数</th>
+<th scope="col" class="left">可选/比选</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">-input</td>
+<td class="left">必选</td>
+</tr>
+
+<tr>
+<td class="left">-output</td>
+<td class="left">必选</td>
+</tr>
+
+<tr>
+<td class="left">-mapper</td>
+<td class="left">必选</td>
+</tr>
+
+<tr>
+<td class="left">-reducer</td>
+<td class="left">必选</td>
+</tr>
+
+<tr>
+<td class="left">-file</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-inputformat</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-outputformat</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-partitioner</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-combiner</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-cmdenv</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-inputreader</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-verbose</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-lazyOutput</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-numReduce tasks</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-mapdebug</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-reducedebug</td>
+<td class="left">可选</td>
+</tr>
+
+<tr>
+<td class="left">-io</td>
+<td class="left">可选</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>参数详解
+<ol class="org-ol">
+<li>-file
+用于将文件加入到Hadoop的Job中。要使用自己编写的map 或者 reduce，
+这些文件是Hadoop集群中的机器上没有的，这时就需要使用
+Hadoop流中的 -file 命令将这个可执行文件加入到Hadoop的Job中。
+</li>
+<li>-combiner
+</li>
+</ol>
 </li>
 </ol>
 </div>
 </div>
+
 <div id="outline-container-sec-2-2" class="outline-3">
 <h3 id="sec-2-2"><span class="section-number-3">2.2</span> 流工作原理</h3>
 <div class="outline-text-3" id="text-2-2">
@@ -943,7 +1053,7 @@ Map 任务运行时，会把输入切分成行提供给可执行文件，并作�
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: CrazyJerry</p>
-<p class="date">Created: 2016-02-05 五 19:38</p>
+<p class="date">Created: 2016-02-16 二 15:41</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

@@ -259,14 +259,50 @@
 ** Hadoop 流
    1. 命令
       #+BEGIN_SRC shell
-	 bin/hadoop jar contrib/streaming/hadoop-0.20.2-streaming.jar \
-	     -input input --output output -mapper cat -reducer wc
-
-	-input      指明输入文件路径
-	-output     指明输出文件路径
-	-mapper     指定map函数
-	-reducer    指定reduce函数
+	bin/hadoop jar contrib/streaming/hadoop-0.20.2-streaming.jar \
+	    -input <inputfile> -output outputdir -mapper cat -reducer wc
       #+END_SRC
+   2. 参数
+      | 参数             | 可选/比选 |
+      |------------------+-----------|
+      | -input           | 必选      |
+      | -output          | 必选      |
+      | -mapper          | 必选      |
+      | -reducer         | 必选      |
+      | -file            | 可选      |
+      | -inputformat     | 可选      |
+      | -outputformat    | 可选      |
+      | -partitioner     | 可选      |
+      | -combiner        | 可选      |
+      | -cmdenv          | 可选      |
+      | -inputreader     | 可选      |
+      | -verbose         | 可选      |
+      | -lazyOutput      | 可选      |
+      | -numReduce tasks | 可选      |
+      | -mapdebug        | 可选      |
+      | -reducedebug     | 可选      |
+      | -io              | 可选      |
+   3. 参数详解
+      1. -file
+	 用于将文件加入到Hadoop的Job中。要使用自己编写的map 或者 reduce，
+	 这些文件是Hadoop集群中的机器上没有的，这时就需要使用
+	 Hadoop流中的 -file 命令将这个可执行文件加入到Hadoop的Job中。
+      2. -combiner
+	 用来加入 combiner 程序
+      3. -inputformat、-outputformat
+	 这两个命令用来设置输入输出文件的处理方法，这两个命令后面的参数必须是Java类。
+   4. 流的Job设置命令
+      | 参数      | 必选/可选 |
+      |-----------+-----------|
+      | -conf     | 可选      |
+      | -D        | 可选      |
+      | -fs       | 可选      |
+      | -jt       | 可选      |
+      | -files    | 可选      |
+      | -libjars  | 可选      |
+      | -archives | 可选      |
+
+
 ** 流工作原理
    当一个可执行文件作为 Mapper 时，每一个 Map 任务会以一个独立的进程启动这个可执行文件，然后在
    Map 任务运行时，会把输入切分成行提供给可执行文件，并作为它的标准输入(stdin)内容。可执行文件
