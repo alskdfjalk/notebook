@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>docker</title>
-<!-- 2016-02-23 Tue 18:17 -->
+<!-- 2016-02-24 Wed 23:20 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="CarlJohn" />
@@ -219,16 +219,27 @@ for the JavaScript code in this tag.
 </li>
 </ul>
 </li>
-<li><a href="#sec-2">2. 原理（实现方式）</a>
+<li><a href="#sec-2">2. 原理（实现方式）—— namespace</a>
 <ul>
 <li><a href="#sec-2-1">2.1. 目的</a></li>
-<li><a href="#sec-2-2">2.2. namespace</a>
+<li><a href="#sec-2-2">2.2. 资源隔离标志位(20多种CLONE<sub>*</sub>)</a></li>
+<li><a href="#sec-2-3">2.3. /proc/[pid]/ns 目录</a></li>
+<li><a href="#sec-2-4">2.4. namespace的四种API</a>
 <ul>
-<li><a href="#sec-2-2-1">2.2.1. 资源隔离标志位(20多种CLONE<sub>*</sub>)</a></li>
-<li><a href="#sec-2-2-2">2.2.2. /proc/[pid]/ns 目录</a></li>
-<li><a href="#sec-2-2-3">2.2.3. namespace的四种API</a></li>
-<li><a href="#sec-2-2-4">2.2.4. UTS(UNIX Time-sharing System) namespace</a></li>
-<li><a href="#sec-2-2-5">2.2.5. IPC(Inter-Process Communication) namespace</a></li>
+<li><a href="#sec-2-4-1">2.4.1. clone()</a></li>
+<li><a href="#sec-2-4-2">2.4.2. setns() 加入一个已经存在的namespace</a></li>
+<li><a href="#sec-2-4-3">2.4.3. unshare()</a></li>
+<li><a href="#sec-2-4-4">2.4.4. fork()</a></li>
+</ul>
+</li>
+<li><a href="#sec-2-5">2.5. Docker 相关的资源隔离标志位</a>
+<ul>
+<li><a href="#sec-2-5-1">2.5.1. UTS(UNIX Time-sharing System) namespace</a></li>
+<li><a href="#sec-2-5-2">2.5.2. IPC(Inter-Process Communication) namespace</a></li>
+<li><a href="#sec-2-5-3">2.5.3. PID(Process ID) namespace</a></li>
+<li><a href="#sec-2-5-4">2.5.4. (NS namespace)mount namespace</a></li>
+<li><a href="#sec-2-5-5">2.5.5. network namespace 概述</a></li>
+<li><a href="#sec-2-5-6">2.5.6. user namespaces</a></li>
 </ul>
 </li>
 </ul>
@@ -685,7 +696,7 @@ ouruser/sinatra     v2      5db5f8471261  11 hours ago   446.7 MB
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> 原理（实现方式）</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> 原理（实现方式）—— namespace</h2>
 <div class="outline-text-2" id="text-2">
 </div><div id="outline-container-sec-2-1" class="outline-3">
 <h3 id="sec-2-1"><span class="section-number-3">2.1</span> 目的</h3>
@@ -696,11 +707,8 @@ ouruser/sinatra     v2      5db5f8471261  11 hours ago   446.7 MB
 </div>
 </div>
 <div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2"><span class="section-number-3">2.2</span> namespace</h3>
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> 资源隔离标志位(20多种CLONE<sub>*</sub>)</h3>
 <div class="outline-text-3" id="text-2-2">
-</div><div id="outline-container-sec-2-2-1" class="outline-4">
-<h4 id="sec-2-2-1"><span class="section-number-4">2.2.1</span> 资源隔离标志位(20多种CLONE<sub>*</sub>)</h4>
-<div class="outline-text-4" id="text-2-2-1">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
@@ -758,9 +766,9 @@ ouruser/sinatra     v2      5db5f8471261  11 hours ago   446.7 MB
 </table>
 </div>
 </div>
-<div id="outline-container-sec-2-2-2" class="outline-4">
-<h4 id="sec-2-2-2"><span class="section-number-4">2.2.2</span> /proc/[pid]/ns 目录</h4>
-<div class="outline-text-4" id="text-2-2-2">
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> /proc/[pid]/ns 目录</h3>
+<div class="outline-text-3" id="text-2-3">
 <p>
 从3.8内核开始，可以在该目录下看到指向不同namespace号的文件如：
 </p>
@@ -778,10 +786,12 @@ lrwxrwxrwx 1 cj cj 0 2月  23 12:39 uts -&gt; uts:[4026531838]
 </div>
 </div>
 </div>
-<div id="outline-container-sec-2-2-3" class="outline-4">
-<h4 id="sec-2-2-3"><span class="section-number-4">2.2.3</span> namespace的四种API</h4>
-<div class="outline-text-4" id="text-2-2-3">
-</div><ol class="org-ol"><li><a id="sec-2-2-3-1" name="sec-2-2-3-1"></a>clone()<br  /><div class="outline-text-5" id="text-2-2-3-1">
+<div id="outline-container-sec-2-4" class="outline-3">
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> namespace的四种API</h3>
+<div class="outline-text-3" id="text-2-4">
+</div><div id="outline-container-sec-2-4-1" class="outline-4">
+<h4 id="sec-2-4-1"><span class="section-number-4">2.4.1</span> clone()</h4>
+<div class="outline-text-4" id="text-2-4-1">
 <ol class="org-ol">
 <li>通过clone()在创建新进程的同时创建namespace
 <div class="org-src-container">
@@ -796,8 +806,10 @@ lrwxrwxrwx 1 cj cj 0 2月  23 12:39 uts -&gt; uts:[4026531838]
 </li>
 </ol>
 </div>
-</li>
-<li><a id="sec-2-2-3-2" name="sec-2-2-3-2"></a>setns() 加入一个已经存在的namespace<br  /><div class="outline-text-5" id="text-2-2-3-2">
+</div>
+<div id="outline-container-sec-2-4-2" class="outline-4">
+<h4 id="sec-2-4-2"><span class="section-number-4">2.4.2</span> setns() 加入一个已经存在的namespace</h4>
+<div class="outline-text-4" id="text-2-4-2">
 <p>
 在 Docker 中，使用 docker exec 在已经运行着的容器中执行一个新的命令，就需要用到该方法。
 </p>
@@ -826,9 +838,11 @@ execvp(argv[2], &amp;argv[2]);
 </pre>
 </div>
 </div>
-</li>
+</div>
 
-<li><a id="sec-2-2-3-3" name="sec-2-2-3-3"></a>unshare()<br  /><div class="outline-text-5" id="text-2-2-3-3">
+<div id="outline-container-sec-2-4-3" class="outline-4">
+<h4 id="sec-2-4-3"><span class="section-number-4">2.4.3</span> unshare()</h4>
+<div class="outline-text-4" id="text-2-4-3">
 <p>
 同 clone()，但运行在原先的进程上，不需要启动一个新进程。(在Docker中并没有使用这个接口）
 </p>
@@ -838,19 +852,24 @@ execvp(argv[2], &amp;argv[2]);
 </pre>
 </div>
 </div>
-</li>
+</div>
 
-<li><a id="sec-2-2-3-4" name="sec-2-2-3-4"></a>fork()<br  /><div class="outline-text-5" id="text-2-2-3-4">
+<div id="outline-container-sec-2-4-4" class="outline-4">
+<h4 id="sec-2-4-4"><span class="section-number-4">2.4.4</span> fork()</h4>
+<div class="outline-text-4" id="text-2-4-4">
 <p>
 就这么点事儿，fork后看返回值来确定自己是否是子进程，然后做不同的操作 - -|||
 </p>
 </div>
-</li></ol>
+</div>
 </div>
 
-<div id="outline-container-sec-2-2-4" class="outline-4">
-<h4 id="sec-2-2-4"><span class="section-number-4">2.2.4</span> UTS(UNIX Time-sharing System) namespace</h4>
-<div class="outline-text-4" id="text-2-2-4">
+<div id="outline-container-sec-2-5" class="outline-3">
+<h3 id="sec-2-5"><span class="section-number-3">2.5</span> Docker 相关的资源隔离标志位</h3>
+<div class="outline-text-3" id="text-2-5">
+</div><div id="outline-container-sec-2-5-1" class="outline-4">
+<h4 id="sec-2-5-1"><span class="section-number-4">2.5.1</span> UTS(UNIX Time-sharing System) namespace</h4>
+<div class="outline-text-4" id="text-2-5-1">
 <p>
 提供了主机名和域名的隔离，这样才能在网络上被当作一个独立的节点，而非宿主机上的一个进程。
 在Docker中，每个镜像基本都以自身提供的服务名称来命名镜像的hostname，且不会对宿主机产生任何影响，原理就是利用UTS namespace
@@ -884,7 +903,8 @@ int child_main(void *args)
 int main()
 {
 	printf("程序开始：\n");
-	int child_pid = clone(child_main, child_stack + STACK_SIZE, CLONE_NEWUTS | SIGCHLD, NULL);
+	int child_pid = clone(child_main, child_stack + STACK_SIZE,
+			      CLONE_NEWUTS | SIGCHLD, NULL);
 	if (0 &gt; child_pid)
 		perror("不知到为什么错了");
 	waitpid(child_pid, NULL, 0);
@@ -896,16 +916,455 @@ int main()
 </div>
 </div>
 
-<div id="outline-container-sec-2-2-5" class="outline-4">
-<h4 id="sec-2-2-5"><span class="section-number-4">2.2.5</span> IPC(Inter-Process Communication) namespace</h4>
-<div class="outline-text-4" id="text-2-2-5">
+<div id="outline-container-sec-2-5-2" class="outline-4">
+<h4 id="sec-2-5-2"><span class="section-number-4">2.5.2</span> IPC(Inter-Process Communication) namespace</h4>
+<div class="outline-text-4" id="text-2-5-2">
 <p>
 进程间通信涉及的IPC资源包括常见的信号量、消息队列和共享内存。
+申请IPC资源就申请了一个全局唯一的32位ID，所以IPC namespace中实际上包含了系统IPC标识符以及实现POSIX消息队列的文件系统。
+在同一个IPC namespace下的进程彼此可见，不同IPC namespace下的进程则互相不可见。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-shell">$ ipcmk -Q    # 创建一个message queue
+$ ipcs -q     # 查看已经开启的 message queue
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre class="src src-c">#define _GNU_SOURCE
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sched.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;unistd.h&gt;
+
+#define STACK_SIZE (1024 * 1024)
+
+static char child_stack[STACK_SIZE];
+char * const child_args[] = {
+ "/bin/bash",
+ NULL,
+};
+
+int child_main(void *args)
+{
+ printf("在子进程中!\n");
+ sethostname("NewNamespace", 12);
+ execv(child_args[0], child_args);
+ return 1;
+}
+
+int main()
+{
+ printf("程序开始：\n");
+ int child_pid = clone(child_main, child_stack + STACK_SIZE,
+		       CLONE_NEWIPC | SIGCHLD | CLONE_NEWUTS, NULL);
+ if (0 &gt; child_pid)
+	 perror("不知到为什么错了");
+ waitpid(child_pid, NULL, 0);
+ puts("已退出");
+ return 0;
+}
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre class="src src-shell">$ ipcs -q    # 查看已经开启的消息队列时已经看不到刚才创建的了, 实现了IPC的隔离。
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-5-3" class="outline-4">
+<h4 id="sec-2-5-3"><span class="section-number-4">2.5.3</span> PID(Process ID) namespace</h4>
+<div class="outline-text-4" id="text-2-5-3">
+<p>
+隔离PID
+</p>
+<ol class="org-ol">
+<li>每个PID namespace中的第一个进程“PID 1”，都会像传统Linux中的init进程一样拥有特权，起特殊作用。
+</li>
+<li>一个namespace中的进程，不可能通过kill或ptrace影响父节点或者兄弟节点中的进程，因为其它节点的PID在这个namespace中没有任何意义
+</li>
+<li>如果在新的PID namespace中重新挂载/proc文件系统，会发现其下只显示同一个PID namespace中的其它进程。
+</li>
+<li>在root namespace中可以看到所有进程，并且递归包含所有子节点中的进程。
+</li>
+</ol>
+
+<p>
+扩展：
+    外部监控Docker中运行的程序，监控Dockerdaemon所在的PID namespace下的所有进程机器子进程，如有需要，可以筛选检查。
+</p>
+
+<p>
+将上例中的代码修改如下：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-c">// [...]
+int child_pid = clone(child_main, child_stack + STAK_SIZE,
+		      CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWUTS, | SIGHLD, NULL);
+// [...]
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre class="src src-shell">[cj @ office 17:08 ~/tmp]$ sudo ./a.out
+程序开始：
+在子进程中!
+[root @ NewNamespace 17:08 /home/cj/tmp]$ echo $$
+1
+[root @ NewNamespace 17:08 /home/cj/tmp]$ ps aux | grep a.out
+root     16032  0.0  0.0 233532  7336 pts/0    S    17:08   0:00 sudo ./a.out
+root     16033  0.0  0.0   5192   788 pts/0    S    17:08   0:00 ./a.out
+root     16213  0.0  0.0 114344  2352 pts/0    S+   17:08   0:00 grep --color=auto a.out
+[root @ NewNamespace 17:08 /home/cj/tmp]$ exit
+已退出
+[cj @ office 17:08 ~/tmp]$ echo $$
+13636
+[cj @ office 17:08 ~/tmp]$
+</pre>
+</div>
+
+<p>
+<i><b>但是，由于尚未对文件系统挂载点隔离，所以/proc目录还是可以读取到当前宿主机的所有进程状态</b></i>
 </p>
 </div>
+
+<ol class="org-ol"><li><a id="sec-2-5-3-1" name="sec-2-5-3-1"></a>PID namespace 中的 init 进程<br  /><div class="outline-text-5" id="text-2-5-3-1">
+<ol class="org-ol">
+<li>容器中需要一个类似宿主机的 init 进程来维护容器中的进程表
+</li>
+<li>如果确实需要在一个Docker容器中运行多个进程，最先启动的命令进程应该是具有资源监控与回收等管理能力的，如 bash。
+</li>
+</ol>
+</div>
+</li>
+<li><a id="sec-2-5-3-2" name="sec-2-5-3-2"></a>信号与 init 进程<br  /><div class="outline-text-5" id="text-2-5-3-2">
+<ol class="org-ol">
+<li>init 进程的特权 —— 信号屏蔽
+如果 init 中没有编写处理某个信号的代码逻辑，那么与 init 在同一个 PID namespace 下的进程（即使有超级权限）
+发送给 init 的信号都会被屏蔽。（主要作用是防止 init 进程被误杀）
+</li>
+<li>父节点发送给子节点的 SIGKILL 和 SIGSTOP，子节点的 init 会强制执行。(父节点可以终止子节点的进程）
+</li>
+<li>init 被销毁后，同一 namespace(PID) 中的其它进程也会接收到 SIGKILL。
+理论上，该 PID namespace 将不存在，除非 /proc/[pid]/ns/pid 处于被挂载或者打开的状态，namespace就会
+保留，但是也不能执行 setns() 、fork()，所以实际上也没有用了。
+</li>
+</ol>
+</div>
+</li>
+<li><a id="sec-2-5-3-3" name="sec-2-5-3-3"></a>挂载 proc 文件系统<br  /><div class="outline-text-5" id="text-2-5-3-3">
+<p>
+如果需要只能看到 PID namespace 本身应该看到的进程，需要重新挂载 /proc：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-shell">[cj @ office 18:08 ~/tmp]$ sudo ./a.out
+程序开始：
+在子进程中!
+[root @ NewNamespace 18:08 /home/cj/tmp]$ mount -t proc proc /proc
+[root @ NewNamespace 18:08 /home/cj/tmp]$ ps auxf
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.3  0.0 118372  4872 pts/0    S    18:08   0:00 /bin/bash
+root        44  0.0  0.0 153184  3952 pts/0    R+   18:08   0:00 ps auxf
+[root @ NewNamespace 18:08 /home/cj/tmp]$ umount /proc
+[root @ NewNamespace 18:08 /home/cj/tmp]$ exit
+</pre>
+</div>
+</div>
+</li>
+<li><a id="sec-2-5-3-4" name="sec-2-5-3-4"></a>unshare() 和 setns()<br  /><div class="outline-text-5" id="text-2-5-3-4">
+<p>
+<i><b>创建其它 namespace 时这两个调用都会直接进入新的namespace，PID namespace则不会</b></i>
+</p>
+
+<p>
+<i><b>一旦程序进程创建之后，它的 PID namespace 的关系就确定下来了，进程不会变更它们对应的 PID namespace。</b></i>
+<i><b>在Docker中，docker exec 会使用setns()函数加入已经存在的命名空间，但是最终还是会调用clone()函数。</b></i>
+</p>
+</div>
+</li></ol>
+</div>
+
+<div id="outline-container-sec-2-5-4" class="outline-4">
+<h4 id="sec-2-5-4"><span class="section-number-4">2.5.4</span> (NS namespace)mount namespace</h4>
+<div class="outline-text-4" id="text-2-5-4">
+<ol class="org-ol">
+<li>历史上第一个Linux namespace
+</li>
+<li>通过隔离文件系统挂载点对隔离文件系统提供支持
+</li>
+<li>标识符： CLONE<sub>NEWNS</sub>
+</li>
+<li>06年引入的挂载传播
+<ol class="org-ol">
+<li>共享关系(share relationship)
+如果两个挂载对象具有共享关系，那么一个挂载对象中的挂载事件会传播到另一个挂载对象，反之亦然。
+</li>
+<li>从属关系(slave relationship)
+如果两个挂载对象形成从属关系，那么一个挂载对象中的挂载事件会传播到另一个挂载对象，反之不行；
+在这种关系中，从属对象是事件的接受者。
+</li>
+</ol>
+</li>
+<li>一个挂载状态可能为以下一种：
+<ol class="org-ol">
+<li>共享挂载(shared)
+传播事件的挂载对象称为共享挂载
+</li>
+<li>从属挂载(slave)
+接收传播事件的挂载对象称为从属挂载
+</li>
+<li>共享／从属挂载(shared and slave)
+同时兼有前述两者特征的挂载对象称为 <i><b>共享/从属挂载</b></i>
+</li>
+<li>私有挂载(private)
+既不传播也不接收传播事件的挂载对象称为私有挂载
+</li>
+<li>不可绑定挂载(unbindable)
+与私有挂载相似，但是不允许执行绑定挂载，即创建 mount namespace 时这块文件对象不可被复制。
+</li>
+</ol>
+<p>
+<img src="../img/docker_mount.jpg" alt="docker_mount.jpg" width="400pt" />
+上图中，
+</p>
+
+<p>
+最上层的 mount namespace 下的 /bin 目录与 child namespace 通过 master slave 方式
+进行挂载传播，当 mount namespace 中的 /bin 目录发生变化时，发生的挂载事件能够自动传播
+到 child namespace 中
+</p>
+
+<p>
+/lib 目录使用完全的共享挂载传播，各 namespace 之间发生的变化都会互相影响
+</p>
+
+<p>
+/proc 目录使用私有挂载传播的方式，各 mount namespace 之间互相隔离
+</p>
+
+<p>
+最后的 /root 目录一半都是管理员所有，不能让其它 mount namespace 挂载绑定
+</p>
+</li>
+
+<li>挂载属性命令, 默认情况下，所有挂载状态都是私有的，
+<ol class="org-ol">
+<li>设置为共享挂载的命令如下
+<div class="org-src-container">
+
+<pre class="src src-shell">$ mount --make-shared &lt;mount-object&gt;
+</pre>
+</div>
+</li>
+<li>从属挂载
+<div class="org-src-container">
+
+<pre class="src src-shell">$ mount --make-slave &lt;shared-mount-object&gt;
+</pre>
+</div>
+</li>
+<li>共享／从属挂载
+<div class="org-src-container">
+
+<pre class="src src-shell">$ mount --make-shared &lt;slave-mount-object&gt;
+</pre>
+</div>
+</li>
+<li>私有挂载
+<div class="org-src-container">
+
+<pre class="src src-shell">$ mount --make-private &lt;mount-object&gt;
+</pre>
+</div>
+</li>
+<li>不可绑定的挂载
+<div class="org-src-container">
+
+<pre class="src src-shell">$ make --make-unbindable &lt;mount-object&gt;
+</pre>
+</div>
+</li>
+</ol>
+</li>
+<li>示例
+<div class="org-src-container">
+
+<pre class="src src-c">// [...]
+int child_pid = clone(child_main, child_stack + STACK_SIZE,
+		      CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWIPC,
+		      CLONE_NEWUTS | SIGCHLD, NULL);
+// [...]
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre class="src src-shell">[cj @ office 21:56 ~/tmp]$ sudo mount --make-private /proc
+[cj @ office 21:56 ~/tmp]$ sudo ./a.out
+程序开始：
+在子进程中!
+[root @ NewNamespace 21:57 /home/cj/tmp]$ mount --make-private -t proc proc /proc
+[root @ NewNamespace 21:57 /home/cj/tmp]$ ps auxf
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.3  0.0 118372  4836 pts/0    S    21:57   0:00 /bin/bash
+root        44  0.0  0.0 153184  3740 pts/0    R+   21:57   0:00 ps auxf
+[root @ NewNamespace 21:57 /home/cj/tmp]$ exit
+已退出
+[cj @ office 21:57 ~/tmp]$ ps aux | wc -l
+184
+[cj @ office 21:57 ~/tmp]$
+</pre>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-2-5-5" class="outline-4">
+<h4 id="sec-2-5-5"><span class="section-number-4">2.5.5</span> network namespace 概述</h4>
+<div class="outline-text-4" id="text-2-5-5">
+<ol class="org-ol">
+<li>一个物理的网络设备最多存在于一个network namespace中，可以通过创建veth pair(虚拟网络设备对:
+有两端，类似管道，如果数据从一端传入另一端也能接收到，反之亦然)在不同 network namespace 间创建通道，
+以达到通信目的。
+</li>
+<li>在建立起 veth pair 之前，假设容器初始化的进程称为 init。Docker daemon 在宿主机上负责创建这个
+veth pair，把另一端绑定到 docker0 网桥上，另一端介入新建的 network namespace 进程中。这个过程
+执行期间，Docker daemon 和 init 就通过 pipe 进行通信。具体来说，就是在 Docker daemon 完成
+veth pair 的创建之前，init在管道的另一端循环等待，知道管道另一端传来 Docker daemon 关于 veth
+设备的信息，并关闭管道。init 才结束等待的过程，并把它的 "eth0" 启动起来。如图：
+
+<div class="figure">
+<p><img src="../img/docker_network_veth.png" alt="docker_network_veth.png" width="400pt" />
+</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-2-5-6" class="outline-4">
+<h4 id="sec-2-5-6"><span class="section-number-4">2.5.6</span> user namespaces</h4>
+<div class="outline-text-4" id="text-2-5-6">
+<ol class="org-ol">
+<li>隔离用户:
+在宿主机上以普通用户创建的容器中，该用户可以拥有最高权限。
+</li>
+<li>目前6个 namespace 中最后一个支持的，3.8内核时还尚未实现所有功能。(尚不成熟)
+</li>
+<li>示例：
+<div class="org-src-container">
+
+<pre class="src src-c">#define _GNU_SOURCE
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sched.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/capability.h&gt;
+
+#define STACK_SIZE (1024 * 1024)
+
+extern cap_t cap_get_proc(void);
+
+static char child_stack[STACK_SIZE];
+char * const child_args[] = {
+	"/bin/bash",
+	NULL,
+};
+
+int child_main(void *args)
+{
+	printf("在子进程中!\n");
+
+	cap_t caps;
+
+	printf("eUID = %ld; eGID = %ld; ",
+	       (long)geteuid(), (long)getegid());
+	caps = cap_get_proc();
+
+	printf("capabilities: %s\n", cap_to_text(caps, NULL));
+
+	execv(child_args[0], child_args);
+	return 1;
+}
+
+int main(void)
+{
+	printf("程序开始：\n");
+	int child_pid = clone(child_main, child_stack + STACK_SIZE,
+			      CLONE_NEWIPC | CLONE_NEWUTS | SIGCHLD |
+			      CLONE_NEWPID | CLONE_NEWNS | CLONE_NEWUSER,
+			      NULL);
+	if (0 &gt; child_pid)
+		perror("不知到为什么错了");
+	waitpid(child_pid, NULL, 0);
+	puts("已退出");
+	return 0;
+}
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre class="src src-shell">[cj @ office 22:59 ~/tmp]$ id
+uid=1000(cj) gid=1000(cj) 组=1000(cj),10(wheel)
+[cj @ office 22:59 ~/tmp]$ ./a.out
+程序开始：
+在子进程中!
+eUID = 65534; eGID = 65534; capabilities: = cap_chown,cap_dac_override,[...]37+ep
+# 这时拥有了对整个文件系统做任何修改的权限
+AC available
+[nfsnobody @ office 22:59 ~/tmp]$ id
+uid=65534(nfsnobody) gid=65534(nfsnobody) 组=65534(nfsnobody)
+[nfsnobody @ office 23:00 ~/tmp]$
+</pre>
+</div>
+</li>
+<li>通过上述示例得出：
+<ol class="org-ol">
+<li>user namespace 创建后，第一个进程被赋予了该 namespace 中的全部权限，
+这样该 init 进程就可以完成所有必要的初始化工作。
+</li>
+<li>从 namespace 内部观察到的 UID 和 GID 已经与外部不同了，默认显示为65534，表示尚未
+与外部 namespace 用户映射。所以 <i><b>需要对 user namespace 内部的这个初始 user 和它外部 namespace 的某个用户建立映射。</b></i>
+这样在操作外部 namespace 时，系统可以检验权限。
+</li>
+<li>新用户在新 namespace 中有全部权限，外部 namespace 用户则没有任何权限。
+<div class="org-src-container">
+
+<pre class="src src-shell">[nfsnobody @ office 23:10 ~/tmp]$ ll
+总用量 28
+---------- 1 nfsnobody nfsnobody 10536 2月  24 22:59 a.out
+-rw-rw-r-- 1 nfsnobody nfsnobody   313 2月  22 15:07 monitor_db_m.sh
+drwxrwxr-x 2 nfsnobody nfsnobody  4096 2月  18 17:12 sinatra/
+-rwxr--r-- 1 nfsnobody nfsnobody   964 2月  24 22:59 uts.c*
+-rwxr--r-- 1 nfsnobody nfsnobody   744 2月  24 21:43 uts.c~*
+[nfsnobody @ office 23:10 /tmp]$ exit
+已退出
+[cj @ office 23:17 ~/tmp]$ ll
+总用量 28
+---------- 1 cj cj 10536 2月  24 22:59 a.out
+-rw-rw-r-- 1 cj cj   313 2月  22 15:07 monitor_db_m.sh
+drwxrwxr-x 2 cj cj  4096 2月  18 17:12 sinatra/
+-rwxr--r-- 1 cj cj   964 2月  24 22:59 uts.c*
+-rwxr--r-- 1 cj cj   744 2月  24 21:43 uts.c~*
+</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
 </div>
 </div>
 </div>
+</div>
+
 <div id="outline-container-sec-3" class="outline-2">
 <h2 id="sec-3"><span class="section-number-2">3</span> Docker 常用选项</h2>
 <div class="outline-text-2" id="text-3">
@@ -1000,7 +1459,7 @@ int main()
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: CarlJohn</p>
-<p class="date">Created: 2016-02-23 Tue 18:17</p>
+<p class="date">Created: 2016-02-24 Wed 23:20</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
