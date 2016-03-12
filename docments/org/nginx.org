@@ -1,0 +1,96 @@
+#+OPTIONS: ^:nil
+* 深入前的准备知识
+** 内核参数（示例，需要区分具体应用来设置）
+   1. fs.file-max = 999999
+
+      进程（比如一个worker进程）可以同时打开的最大句柄数，这个参数直接限制了最大并发连接数，需根据实际情况配置。
+
+   2. net.ipv4.tcp_tw_reuse = 1
+
+      这个参数设置为1, 表示允许将TIME-WAIT状态的socket重新用于新的TCP连接，这对于服务器来说很有意义，因为服务器上总会有大量
+      TIME-WAIT状态的连接。
+
+   3. net.ipv4.tcp_keepalive_time = 600
+
+      表示当keepalive启用时，TCP发送keepalive消息的频度。默认2小时，设置更小时，可以更快清理无效连接。
+
+   4. net.ipv4.tcp_fin_timeout = 30
+
+      表示服务器主动关闭连接时，socket保持在FIN-WAIT-2状态的最大时间。
+
+   5. net.ipv4.tcp_max_tw_buckets = 5000
+
+      这个参数表示操作系统允许TIME_WAIT套接字数量的最大值，如果超过这个数字，TIME_WAIT套接字将立刻被清除并打印警告信息。
+      默认 180 000, 过多的TIME_WAIT套接字会使WEB服务器变慢。
+
+   6. net.ipv4.tcp_max_syn_backlog = 1024
+
+      这个参数表示TCP三次握手建立阶段接收SYN请求队列的最大长度，默认1024, 将其设置大一些可以使出现Nginx繁忙来不及accept时，
+      Linux不至于丢失客户端发起的连接请求。
+
+   7. net.ipv4.ip_local_port_range = 1024 61000
+
+      定义了在UDP和TCP连接中本地（不包括连接的远端）端口的取值范围。
+
+   8. net.ipv4.tcp_rmem = 4096 32768 262142
+
+      这个参数定义了TCP接收缓存（用于TCP接收滑动窗口）的最小值、默认值、最大值。
+
+   9. net.ipv4.tcp_wmem = 4096 32768 262142
+
+      定义了TCP发送缓存（用于TCP发送滑动窗口）的最小值、默认值、最大值。
+
+   10. net.core.netdev_max_backlog = 8096
+
+       当网卡接收数据包的速度大于内核处理的速度时，会有一个队列保存这些数据包。这个参数表示该队列的最大值。
+
+   11. net.core.rmem_default = 262144
+
+       内核套接字接收缓存区默认的大小
+
+   12. net.core.wmem_default = 262144
+
+       套接字发送缓存区默认大小
+
+   13. net.core.rmem_max = 2097152
+
+       内核套接字接收缓存区的最大大小
+
+   14. net.core.wmem_max = 2097152
+
+       内核套接字发送缓存区最大大小
+
+   15. net.ipv4.tcp_syncookies = 1
+
+       与性能无关，用于解决TCP的SYN攻击。
+** 安装优化参数
+   | 参数名称         | 意义                                                    |
+   |------------------+---------------------------------------------------------|
+   | --with-libatomic | 强制使用atomic库，它时CPU架构独立的一种原子操作的实现。 |
+
+*** 在configure的命令中分为5中参数
+    1. 事件模块
+    2. 默认即编译进入Nginx的HTTP模块
+    3. 默认不会编译进入Nginx的HTTP模块
+    4. 邮件代理服务器相关的mail模块
+    5. 其他
+*** 注意事项
+    编译完成后，会在根目录生成一个 objs 目录，目录中的内容编译好的二进制文件及其他编译时用到的C代码文件。
+    其中有一个文件为：ngx_modules.c 文件，它指明了每个模块在Nginx中的优先级，
+    1. 当一个请求同时符合多个模块的处理规则时，将按照它们在ngx_modules数组中的顺序选择最靠前的模块优先处理。
+    2. 对于HTTP的过滤模块而言则是相反的，因为HTTP框架在初始化时，会在ngx_modules数组中将过滤模块按先后顺序向
+       过滤链表中添加，但每次都时添加到链表的表头。
+** 其他技巧nn
+*** 信号
+    #+BEGIN_SRC shell
+      $ nginx -s quit  # 正常退出
+    #+END_SRC
+    #+BEGIN_SRC shell
+      $ nginx -s reopen  # 重新生成日志
+    #+END_SRC
+*** 平滑升级
+    #+BEGIN_SRC shell
+      $ kill -s SIGUSR2 <nginx master pid>    # 必须将旧的pid文件重命名
+      $ nginx -s reload\reopen                       # 执行后新旧进程将同时存在
+      $ kill -s quit <nginx master pid>       # 向老的进程发送quit
+    #+END_SRC
