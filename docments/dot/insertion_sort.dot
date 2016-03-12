@@ -20,7 +20,7 @@ digraph graphname {
 			height=.3,
 			width=1.1,
 			]
-	isjright  [label="j > 0 &&\ndata[j] > tmpv" 
+	isjright  [label="j >= 0 &&\ndata[j] > tmpv" 
 			shape=diamond,
 			width=1.5,
 			height=.6,
@@ -44,7 +44,7 @@ digraph graphname {
 			width=1.1]
 
 	isjright -> exchange [label="True", fontcolor=blue]
-	exchange -> swap
+	exchange -> isjright
 
 }
 /*

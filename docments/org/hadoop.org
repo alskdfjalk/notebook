@@ -256,6 +256,27 @@
       bin/hadoop-daemon.sh --config ./conf start tasktracker
     #+END_SRC
 * MapReduce 计算模型
+** MapReduce 任务优化
+   1. 任务调度
+      1) 计算: Hadoop 总会优先将任务分配给空闲的机器，均匀的使用集群资源
+      2) I/O: Hadoop 会尽量将Map任务分配给InputSplit 所在的机器，以减少网络I/O的消耗
+   2. 数据预处理与InputSplit的大小
+      1) 擅长处理少量的大数据，大量的小数据会很弱
+      2) 所以在mapreduce之前，将数据合并会提高 MapReduce 的效率
+      3) 通过时间来优化，一个 Map 任务的运行时间在一分钟左右比较合适, 可以通过设置 Map 的输入数据大小来调节 Map 的运行时间。
+   3. Map 和 Reduce 任务的数量
+      合理地设置 Map 任务与 Reduce 任务的数量对提高 MapReduce 任务的效率是非常重要的。默认的设置往往不能很好地体现出
+      MapReduce 任务的需求。
+      1) Map/Reduce 任务槽
+	 #+BEGIN_SRC conf
+	   示例解释概念：
+	      集群机器数  1200
+	      同时最大Map 10
+	      同时最大 Reduce  5
+
+	      这个集群的Map任务槽就是(1200 x 10) = 12000，Reduce任务槽是(1200 x 5) = 6000
+	 #+END_SRC
+
 ** Hadoop 流
    1. 命令
       #+BEGIN_SRC shell
@@ -301,7 +322,6 @@
       | -files    | 可选      |
       | -libjars  | 可选      |
       | -archives | 可选      |
-
 
 ** 流工作原理
    当一个可执行文件作为 Mapper 时，每一个 Map 任务会以一个独立的进程启动这个可执行文件，然后在

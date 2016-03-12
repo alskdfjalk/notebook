@@ -11,38 +11,8 @@
 <p>
 算法的基础是排序算法
 </p>
-<h5 id="toc_0.0.0.1.1">插入排序</h5>
-<ul>
-<li>
-定义
-<pre>
-  	生活实例：
-		插入排序的工作方式像许多人排序一手扑克牌。开始时，我们的左手为空
-	并且桌子上的牌面向下。然后，我们没次从桌子上拿走一张牌并将它插入左手中正
-	确的位置，我们从右到左将它与已在手中的拍总是排序好的, 原来这些牌是桌子上
-	牌堆中顶部的牌。
-	
-	代码：
-		int data[] = {1, 4, 5, 6, 7, 7, 23, 4423, 434, 75, 8, 568};
-		int len = sizeof(data) / sizeof(int);
-		int key = 0;
-		int j = 0;
-		
-		for (int i = 0; i &lt; len(data); i++) {
-			tmp_of_now = data[i];
-			last_array = i - 1;
-			if (last_array &gt; 0 &amp;&amp; data[last_array] &gt; tmp_of_now) {
-				data[last_array+1] = data[last_array];
-				last_array--;
-			}
-			data[last_array+1] = tmp_of_now;
-		}
-		for (int i = 0; i &lt; len; i++)
-			printf("%d\n", data[i]);
-		return 0;
-</pre>
-
-</ul>
+<h5 id="toc_0.0.0.1.1"><a href="插入排序.html">插入排序</a></h5>
+<h5 id="toc_0.0.0.1.2"><a href="分治法.html">分治法</a></h5>
 
 </body>
 </html>
