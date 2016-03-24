@@ -80,7 +80,7 @@
     1. 当一个请求同时符合多个模块的处理规则时，将按照它们在ngx_modules数组中的顺序选择最靠前的模块优先处理。
     2. 对于HTTP的过滤模块而言则是相反的，因为HTTP框架在初始化时，会在ngx_modules数组中将过滤模块按先后顺序向
        过滤链表中添加，但每次都时添加到链表的表头。
-** 其他技巧nn
+** 其他技巧
 *** 信号
     #+BEGIN_SRC shell
       $ nginx -s quit  # 正常退出
@@ -94,3 +94,116 @@
       $ nginx -s reload\reopen                       # 执行后新旧进程将同时存在
       $ kill -s quit <nginx master pid>       # 向老的进程发送quit
     #+END_SRC
+** 配置技巧
+*** 调试、定位问题的配置项
+**** 是否进程（后台）
+     #+BEGIN_SRC conf
+       daemon on | off;
+     #+END_SRC
+**** 是否master/worker方式
+     #+BEGIN_SRC conf
+       master_process on | off;
+     #+END_SRC
+**** error日志的设置
+     #+BEGIN_SRC conf
+       error_log /path/file leve;
+     #+END_SRC
+     error_log /dev/null error; # 关闭error日志的唯一手段。
+
+     日志级别从小到大，大于等于该级别的日志都会输出：
+     level: /*debug info notice warn error crit alert emerg*/
+
+     如果要指定debug，必须在configure的时候加入 --with-debug
+**** 特殊调试点
+     stop: 代码执行到这些调试点时会发出SIGSTOP信号
+
+     abort: 产生一个coredump
+
+     #+BEGIN_SRC conf
+       debug_points [stop | abort]
+     #+END_SRC
+
+**** 对指定的客户端输出debug级别打扰日志
+     仅对IP或者网段来记录debug日志。
+     需要确保编译时加入了 --with-debug 参数。
+     #+BEGIN_SRC conf
+       debug_connection [IP | CIDR]
+
+       events {
+	      debug_connection 10.1.1.1;
+	      debug_connection 10.1.1.0/24;
+       }
+     #+END_SRC
+**** 限制coredump文件大小及位置
+     #+BEGIN_SRC conf
+       worker_rlimit_core size;
+       worker_directory path;
+     #+END_SRC
+*** 正常运行的配置项
+**** 定义环境变量
+     #+BEGIN_SRC conf
+       env VAR|VAR = VALUE
+     #+END_SRC
+**** 嵌入其他配置文件
+     #+BEGIN_SRC conf
+       include /path/file;
+     #+END_SRC
+**** pid、user、最大句柄描述符、信号队列
+     #+BEGIN_SRC conf
+       pid /path/file;
+       user xxx xxx;
+       worker_rlimit_nofile limit;
+       # 每个用户发往Nginx的信号队列大小
+       worker_rlimit_sigpending limit;
+     #+END_SRC
+*** 优化性能的配置项
+**** 进程数
+    绑定cpu的进程到不同的CPU，默认 1
+    #+BEGIN_SRC conf
+	  worker_processes 4;
+	  worker_cpu_affinity 1000 0100 0010 0001;
+    #+END_SRC
+**** SSL硬件加速
+     #+BEGIN_SRC conf
+       # openssl engine -t 查看是否有SSL硬件加速设备
+       ssl_engine device;
+     #+END_SRC
+**** 系统调用 gettimeofday 的执行效率
+     #+BEGIN_SRC conf
+       # timeer_resolution 100ms;
+       timeer_resolution t;
+     #+END_SRC
+**** 进程优先级
+     #+BEGIN_SRC conf
+       worker_priority 0; # 默认0
+     #+END_SRC
+*** 事件类配置项
+**** 是否打开accept锁
+     #+BEGIN_SRC conf
+       # 用来调度各进程间均衡的提供服务，默认是打开的，如果关闭，TCP连接的耗时会更短，默认on
+       accept_mutex [ on | off];
+     #+END_SRC
+**** lock 文件锁
+     #+BEGIN_SRC conf
+       # 如果accept打开，但是Nghix因为操作系统或其他原因导致不支持原子锁时，才会用文件锁来代替。
+       lock_file /path/file;
+       # 在使用accept锁后，同一时间只有一个worker进程能够取到accept锁，
+       # 如果一个worker进程试图取accept锁而没有取到，它至少要
+       # 等accept_mutex_delay定义的时间间隔后才能再次试图取锁。
+       accept_mutex_delay  500ms; #默认
+     #+END_SRC
+**** 批量建立新连接
+     #+BEGIN_SRC conf
+       # 当事件模型通知有新连接时，尽可能地对本次调度中客户端发起的所有TCP请求都建立连接。默认off
+       multi_accept [ on | off ];
+     #+END_SRC
+**** 选择事件模型
+     #+BEGIN_SRC conf
+       # 自动选择适合的事件模型
+       use [ kqueue | rtsig | epoll |  /dev/poll | select | poll | eventport ];
+     #+END_SRC
+**** 每个worker的最大连接数
+     #+BEGIN_SRC conf
+       # 每个进程同时处理的最大连接数
+       worker_connections number;
+     #+END_SRC

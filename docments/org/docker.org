@@ -614,7 +614,7 @@
 	    -rwxr--r-- 1 cj cj   964 2月  24 22:59 uts.c*
 	    -rwxr--r-- 1 cj cj   744 2月  24 21:43 uts.c~*
 	  #+END_SRC
-       4) 
+       4)
 
 * Docker 常用选项
   | 选项                      | 作用                                                                                                                                                            |
