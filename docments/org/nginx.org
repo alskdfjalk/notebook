@@ -1,0 +1,209 @@
+#+OPTIONS: ^:nil
+* 深入前的准备知识
+** 内核参数（示例，需要区分具体应用来设置）
+   1. fs.file-max = 999999
+
+      进程（比如一个worker进程）可以同时打开的最大句柄数，这个参数直接限制了最大并发连接数，需根据实际情况配置。
+
+   2. net.ipv4.tcp_tw_reuse = 1
+
+      这个参数设置为1, 表示允许将TIME-WAIT状态的socket重新用于新的TCP连接，这对于服务器来说很有意义，因为服务器上总会有大量
+      TIME-WAIT状态的连接。
+
+   3. net.ipv4.tcp_keepalive_time = 600
+
+      表示当keepalive启用时，TCP发送keepalive消息的频度。默认2小时，设置更小时，可以更快清理无效连接。
+
+   4. net.ipv4.tcp_fin_timeout = 30
+
+      表示服务器主动关闭连接时，socket保持在FIN-WAIT-2状态的最大时间。
+
+   5. net.ipv4.tcp_max_tw_buckets = 5000
+
+      这个参数表示操作系统允许TIME_WAIT套接字数量的最大值，如果超过这个数字，TIME_WAIT套接字将立刻被清除并打印警告信息。
+      默认 180 000, 过多的TIME_WAIT套接字会使WEB服务器变慢。
+
+   6. net.ipv4.tcp_max_syn_backlog = 1024
+
+      这个参数表示TCP三次握手建立阶段接收SYN请求队列的最大长度，默认1024, 将其设置大一些可以使出现Nginx繁忙来不及accept时，
+      Linux不至于丢失客户端发起的连接请求。
+
+   7. net.ipv4.ip_local_port_range = 1024 61000
+
+      定义了在UDP和TCP连接中本地（不包括连接的远端）端口的取值范围。
+
+   8. net.ipv4.tcp_rmem = 4096 32768 262142
+
+      这个参数定义了TCP接收缓存（用于TCP接收滑动窗口）的最小值、默认值、最大值。
+
+   9. net.ipv4.tcp_wmem = 4096 32768 262142
+
+      定义了TCP发送缓存（用于TCP发送滑动窗口）的最小值、默认值、最大值。
+
+   10. net.core.netdev_max_backlog = 8096
+
+       当网卡接收数据包的速度大于内核处理的速度时，会有一个队列保存这些数据包。这个参数表示该队列的最大值。
+
+   11. net.core.rmem_default = 262144
+
+       内核套接字接收缓存区默认的大小
+
+   12. net.core.wmem_default = 262144
+
+       套接字发送缓存区默认大小
+
+   13. net.core.rmem_max = 2097152
+
+       内核套接字接收缓存区的最大大小
+
+   14. net.core.wmem_max = 2097152
+
+       内核套接字发送缓存区最大大小
+
+   15. net.ipv4.tcp_syncookies = 1
+
+       与性能无关，用于解决TCP的SYN攻击。
+** 安装优化参数
+   | 参数名称         | 意义                                                    |
+   |------------------+---------------------------------------------------------|
+   | --with-libatomic | 强制使用atomic库，它时CPU架构独立的一种原子操作的实现。 |
+
+*** 在configure的命令中分为5中参数
+    1. 事件模块
+    2. 默认即编译进入Nginx的HTTP模块
+    3. 默认不会编译进入Nginx的HTTP模块
+    4. 邮件代理服务器相关的mail模块
+    5. 其他
+*** 注意事项
+    编译完成后，会在根目录生成一个 objs 目录，目录中的内容编译好的二进制文件及其他编译时用到的C代码文件。
+    其中有一个文件为：ngx_modules.c 文件，它指明了每个模块在Nginx中的优先级，
+    1. 当一个请求同时符合多个模块的处理规则时，将按照它们在ngx_modules数组中的顺序选择最靠前的模块优先处理。
+    2. 对于HTTP的过滤模块而言则是相反的，因为HTTP框架在初始化时，会在ngx_modules数组中将过滤模块按先后顺序向
+       过滤链表中添加，但每次都时添加到链表的表头。
+** 其他技巧
+*** 信号
+    #+BEGIN_SRC shell
+      $ nginx -s quit  # 正常退出
+    #+END_SRC
+    #+BEGIN_SRC shell
+      $ nginx -s reopen  # 重新生成日志
+    #+END_SRC
+*** 平滑升级
+    #+BEGIN_SRC shell
+      $ kill -s SIGUSR2 <nginx master pid>    # 必须将旧的pid文件重命名
+      $ nginx -s reload\reopen                       # 执行后新旧进程将同时存在
+      $ kill -s quit <nginx master pid>       # 向老的进程发送quit
+    #+END_SRC
+** 配置技巧
+*** 调试、定位问题的配置项
+**** 是否进程（后台）
+     #+BEGIN_SRC conf
+       daemon on | off;
+     #+END_SRC
+**** 是否master/worker方式
+     #+BEGIN_SRC conf
+       master_process on | off;
+     #+END_SRC
+**** error日志的设置
+     #+BEGIN_SRC conf
+       error_log /path/file leve;
+     #+END_SRC
+     error_log /dev/null error; # 关闭error日志的唯一手段。
+
+     日志级别从小到大，大于等于该级别的日志都会输出：
+     level: /*debug info notice warn error crit alert emerg*/
+
+     如果要指定debug，必须在configure的时候加入 --with-debug
+**** 特殊调试点
+     stop: 代码执行到这些调试点时会发出SIGSTOP信号
+
+     abort: 产生一个coredump
+
+     #+BEGIN_SRC conf
+       debug_points [stop | abort]
+     #+END_SRC
+
+**** 对指定的客户端输出debug级别打扰日志
+     仅对IP或者网段来记录debug日志。
+     需要确保编译时加入了 --with-debug 参数。
+     #+BEGIN_SRC conf
+       debug_connection [IP | CIDR]
+
+       events {
+	      debug_connection 10.1.1.1;
+	      debug_connection 10.1.1.0/24;
+       }
+     #+END_SRC
+**** 限制coredump文件大小及位置
+     #+BEGIN_SRC conf
+       worker_rlimit_core size;
+       worker_directory path;
+     #+END_SRC
+*** 正常运行的配置项
+**** 定义环境变量
+     #+BEGIN_SRC conf
+       env VAR|VAR = VALUE
+     #+END_SRC
+**** 嵌入其他配置文件
+     #+BEGIN_SRC conf
+       include /path/file;
+     #+END_SRC
+**** pid、user、最大句柄描述符、信号队列
+     #+BEGIN_SRC conf
+       pid /path/file;
+       user xxx xxx;
+       worker_rlimit_nofile limit;
+       # 每个用户发往Nginx的信号队列大小
+       worker_rlimit_sigpending limit;
+     #+END_SRC
+*** 优化性能的配置项
+**** 进程数
+    绑定cpu的进程到不同的CPU，默认 1
+    #+BEGIN_SRC conf
+	  worker_processes 4;
+	  worker_cpu_affinity 1000 0100 0010 0001;
+    #+END_SRC
+**** SSL硬件加速
+     #+BEGIN_SRC conf
+       # openssl engine -t 查看是否有SSL硬件加速设备
+       ssl_engine device;
+     #+END_SRC
+**** 系统调用 gettimeofday 的执行效率
+     #+BEGIN_SRC conf
+       # timeer_resolution 100ms;
+       timeer_resolution t;
+     #+END_SRC
+**** 进程优先级
+     #+BEGIN_SRC conf
+       worker_priority 0; # 默认0
+     #+END_SRC
+*** 事件类配置项
+**** 是否打开accept锁
+     #+BEGIN_SRC conf
+       # 用来调度各进程间均衡的提供服务，默认是打开的，如果关闭，TCP连接的耗时会更短，默认on
+       accept_mutex [ on | off];
+     #+END_SRC
+**** lock 文件锁
+     #+BEGIN_SRC conf
+       # 如果accept打开，但是Nghix因为操作系统或其他原因导致不支持原子锁时，才会用文件锁来代替。
+       lock_file /path/file;
+       # 在使用accept锁后，同一时间只有一个worker进程能够取到accept锁，
+       # 如果一个worker进程试图取accept锁而没有取到，它至少要
+       # 等accept_mutex_delay定义的时间间隔后才能再次试图取锁。
+       accept_mutex_delay  500ms; #默认
+     #+END_SRC
+**** 批量建立新连接
+     #+BEGIN_SRC conf
+       # 当事件模型通知有新连接时，尽可能地对本次调度中客户端发起的所有TCP请求都建立连接。默认off
+       multi_accept [ on | off ];
+     #+END_SRC
+**** 选择事件模型
+     #+BEGIN_SRC conf
+       # 自动选择适合的事件模型
+       use [ kqueue | rtsig | epoll |  /dev/poll | select | poll | eventport ];
+     #+END_SRC
+**** 每个worker的最大连接数
+     #+BEGIN_SRC conf
+       # 每个进程同时处理的最大连接数
+       worker_connections number;
+     #+END_SRC
