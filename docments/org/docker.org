@@ -208,7 +208,7 @@
 	  # --link name:alias
 	#+END_SRC
 
-* 原理（实现方式）—— namespace
+* 原理(实现方式)—— namespace
 ** 目的
    了解docker的实现机制会有助于用更合适的方式来使用docker
 ** 资源隔离标志位(20多种CLONE_*)
@@ -614,7 +614,122 @@
 	    -rwxr--r-- 1 cj cj   964 2月  24 22:59 uts.c*
 	    -rwxr--r-- 1 cj cj   744 2月  24 21:43 uts.c~*
 	  #+END_SRC
-       4) 
+       4) 用户绑定
+	  两个文件:
+	  #+BEGIN_SRC shell
+	    [cj @ office 15:11 ~/tmp]$ # 格式: ID-inside-ns ID-outside-ns length
+	    [cj @ office 15:13 ~/tmp]$ cat /proc/$$/uid_map
+		     0          0 4294967295
+	    [cj @ office 11:20 ~/tmp]$ cat /proc/$$/gid_map
+		     0          0 4294967295
+	  #+END_SRC
+	  文件属性：
+	  1. 只允许由拥有该 user namespace 中 CAP_SETUID 的父 namespace 或者子 namespace
+	  2. 写入的进程必须是该 user namespace 的 父namespace 或者 子namespace
+	  3. ID-inside-ns 表示新建的 user namespace 中对应的 user/group ID，第二个字段
+	     ID-outside-ns 表示 namespace 外部映射的 user/group ID。最后一个字段表示映射范围，
+	     通常填1，表示只映射一个; 如果大于1的值，则按顺序建立一一映射。
+
+	  4. 示例：
+	     #+BEGIN_SRC c
+	       // [...]
+	       void set_uid_map(pid_t pid, int inside_id, int outside_id, int length)
+	       {
+		       char path[256];
+		       sprintf(path, "/proc/%d/uid_map", getpid());
+		       FILE *uid_map = fopen(path, "w");
+		       if (uid_map <= 0)
+			       perror("fopen path");
+		       fprintf(uid_map, "%d %d %d", inside_id, outside_id, length);
+		       fclose(uid_map);
+	       }
+
+	       void set_gid_map(pid_t pid, int inside_id, int outside_id, int length)
+	       {
+		       char path[256];
+		       sprintf(path, "/proc/%d/gid_map", getpid());
+		       FILE *gid_map = fopen(path, "w");
+		       fprintf(gid_map, "%d %d %d", inside_id, outside_id, length);
+		       fclose(gid_map);
+	       }
+	       int child_main(void *args)
+	       {
+		       cap_t caps;
+
+		       printf("在子进程中!\n");
+
+		       set_uid_map(getpid(), 0, 1000, 1);
+		       set_gid_map(getpid(), 0, 1000, 1);
+
+		       printf("eUID = %ld; eGID = %ld; ",
+			      (long)geteuid(), (long)getegid());
+		       caps = cap_get_proc();
+
+		       printf("capabilities: %s\n", cap_to_text(caps, NULL));
+
+		       execv(child_args[0], child_args);
+		       return 1;
+	       }
+	       // [...]
+	     #+END_SRC
+	     编译 & 运行
+	     #+BEGIN_SRC shell
+	       [cj @ office 12:41 ~/tmp]$ ./a.out
+	       程序开始：
+	       在子进程中!
+	       /proc/31716/uid_map
+	       eUID = 0; eGID = 65534; ...,37+ep
+	       AC available
+	       [root @ office 12:41 ~/tmp]$
+	     #+END_SRC
+    5. 如果要把 user namespace 与其它 namespace 混合使用，依旧需要root权限。解决方案是先以普通
+       用户身份创建 user namespace，然后在新建的 namespace 中作为 root，再 clone() 进程加入其它
+       类型的 namespace 隔离。
+
+* 原理(实现方式)—— cgroups
+** what's the cgroups
+   1. 由来
+      cgroups 最初名为 process container，Google 内两个工程师在 06 年提出，后来由于名字有歧义，
+      在 07 年更名为 control groups，并整合进 Linux 内核。
+   2. 官方定义
+      /*cgroups 是 Linux 内核提供的一种机制，这种机制可以根据需求把一系列系统任务及其子任务整合(或*/
+      /*分离)到按资源划分等级的不同组内，从而为系统资源管理提供一个同一的框架。*/
+   3. 特点
+      1. cgroups 的 API 以一个伪文件系统的方式实现，用户态的程序可以通过文件操作实现 cgroups 的组织管理。
+      2. cgroups 的组织管理操作单元可以细粒度到线程级别，用户可以对其创建、销毁，实现资源再分配和管理。
+      3. 所有资源管理的功能都以子系统的方式实现，接口统一。
+      4. 子任务创建之初与其父任务处于同一个 cgroups 的控制组。
+   4. 从本质上来说，cgroups 是内核附加在程序上的一系列钩子(hooks)，通过程序运行时对资源的调度触发相应的钩子
+      以达到资源追踪和限制的目的。
+** 四大功能
+   1. 资源限制
+      cgroups可以对任务使用的资源总额进行限制。如设定应用运行时使用内存的上限，一旦超过配额就发出 OOM (Out of Memory)
+   2. 优先级分配
+      通过分配的 CPU 时间片数量及磁盘 IO 带宽大小，实际上就相当于控制了任务运行的优先级。
+   3. 资源统计
+       cgroups 可以统计系统的资源使用量，如 CPU 使用时长、内存用量等，这个功能非常适用于计费。
+   4. 任务控制
+       cgroups 可以对任务执行挂起、恢复等
+** cgroups 术语表
+   1. task（任务）
+      在 cgroups 术语中，任务表示系统的一个进程或线程
+   2. cgroup（控制组）
+      cgroups中的资源控制都以 cgroup 为单位实现。一个任务可以加入某个 cgroup，也可以从某个 cgroup
+       迁移到另一个 cgroup。
+   3. subsystem（子系统）
+      cgroups 中的子系统就是一个资源调度控制器。CPU 子系统、内存子系统各自负责自己的调度。
+   4. hierarchy（层级）
+      层级由一系列 cgroup 以一个树状结构排列而成，每个层级通过绑定对应的子系统进行资源控制。
+** 组织结构与基本规则 这里不理解，还需要学习
+   1. 同一个层级可以附加一个或多个子系统。
+   2. 一个子系统可以附加到多个层级，当且仅当目标层级只有唯一一个子系统时。
+   3. 系统每次新建一个层级时，该系统上的所有任务默认加入这个新建层级的初始化cgroups，这个 cgroup 也被称为 root cgroup。
+   4. 任务在fork/clone自身时创建的子任务默认与原任务在同一个 cgroup 中，但是子任务允许被移动到不同的 cgroup 中。
+
+   #+ATTR_HTML: :width 500pt
+   [[file:../img/cgroups_system.png]]
+** 子系统简介
+   子系统实际上就是 cgroups 的资源控制系统
 
 * Docker 常用选项
   | 选项                      | 作用                                                                                                                                                            |

@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>docker</title>
-<!-- 2016-02-24 Wed 23:20 -->
+<!-- 2016-02-26 Fri 22:31 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="CarlJohn" />
@@ -219,7 +219,7 @@ for the JavaScript code in this tag.
 </li>
 </ul>
 </li>
-<li><a href="#sec-2">2. 原理（实现方式）—— namespace</a>
+<li><a href="#sec-2">2. 原理(实现方式)—— namespace</a>
 <ul>
 <li><a href="#sec-2-1">2.1. 目的</a></li>
 <li><a href="#sec-2-2">2.2. 资源隔离标志位(20多种CLONE<sub>*</sub>)</a></li>
@@ -244,7 +244,16 @@ for the JavaScript code in this tag.
 </li>
 </ul>
 </li>
-<li><a href="#sec-3">3. Docker 常用选项</a></li>
+<li><a href="#sec-3">3. 原理(实现方式)—— cgroups</a>
+<ul>
+<li><a href="#sec-3-1">3.1. what's the cgroups</a></li>
+<li><a href="#sec-3-2">3.2. 四大功能</a></li>
+<li><a href="#sec-3-3">3.3. cgroups 术语表</a></li>
+<li><a href="#sec-3-4">3.4. <span class="todo TODO">TODO</span> 组织结构与基本规则 这里不理解，还需要学习</a></li>
+<li><a href="#sec-3-5">3.5. 子系统简介</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. Docker 常用选项</a></li>
 </ul>
 </div>
 </div>
@@ -696,7 +705,7 @@ ouruser/sinatra     v2      5db5f8471261  11 hours ago   446.7 MB
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> 原理（实现方式）—— namespace</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> 原理(实现方式)—— namespace</h2>
 <div class="outline-text-2" id="text-2">
 </div><div id="outline-container-sec-2-1" class="outline-3">
 <h3 id="sec-2-1"><span class="section-number-3">2.1</span> 目的</h3>
@@ -1357,7 +1366,96 @@ drwxrwxr-x 2 cj cj  4096 2月  18 17:12 sinatra/
 </pre>
 </div>
 </li>
+<li>用户绑定
+两个文件:
+<div class="org-src-container">
+
+<pre class="src src-shell">[cj @ office 15:11 ~/tmp]$ # 格式: ID-inside-ns ID-outside-ns length
+[cj @ office 15:13 ~/tmp]$ cat /proc/$$/uid_map
+	 0          0 4294967295
+[cj @ office 11:20 ~/tmp]$ cat /proc/$$/gid_map
+	 0          0 4294967295
+</pre>
+</div>
+<p>
+文件属性：
+</p>
+<ol class="org-ol">
+<li>只允许由拥有该 user namespace 中 CAP<sub>SETUID</sub> 的父 namespace 或者子 namespace
+</li>
+<li>写入的进程必须是该 user namespace 的 父namespace 或者 子namespace
+</li>
+<li>ID-inside-ns 表示新建的 user namespace 中对应的 user/group ID，第二个字段
+ID-outside-ns 表示 namespace 外部映射的 user/group ID。最后一个字段表示映射范围，
+通常填1，表示只映射一个; 如果大于1的值，则按顺序建立一一映射。
+</li>
+
+<li>示例：
+<div class="org-src-container">
+
+<pre class="src src-c">// [...]
+void set_uid_map(pid_t pid, int inside_id, int outside_id, int length)
+{
+	char path[256];
+	sprintf(path, "/proc/%d/uid_map", getpid());
+	FILE *uid_map = fopen(path, "w");
+	if (uid_map &lt;= 0)
+		perror("fopen path");
+	fprintf(uid_map, "%d %d %d", inside_id, outside_id, length);
+	fclose(uid_map);
+}
+
+void set_gid_map(pid_t pid, int inside_id, int outside_id, int length)
+{
+	char path[256];
+	sprintf(path, "/proc/%d/gid_map", getpid());
+	FILE *gid_map = fopen(path, "w");
+	fprintf(gid_map, "%d %d %d", inside_id, outside_id, length);
+	fclose(gid_map);
+}
+int child_main(void *args)
+{
+	cap_t caps;
+
+	printf("在子进程中!\n");
+
+	set_uid_map(getpid(), 0, 1000, 1);
+	set_gid_map(getpid(), 0, 1000, 1);
+
+	printf("eUID = %ld; eGID = %ld; ",
+	       (long)geteuid(), (long)getegid());
+	caps = cap_get_proc();
+
+	printf("capabilities: %s\n", cap_to_text(caps, NULL));
+
+	execv(child_args[0], child_args);
+	return 1;
+}
+// [...]
+</pre>
+</div>
+<p>
+编译 &amp; 运行
+</p>
+<div class="org-src-container">
+
+<pre class="src src-shell">[cj @ office 12:41 ~/tmp]$ ./a.out
+程序开始：
+在子进程中!
+/proc/31716/uid_map
+eUID = 0; eGID = 65534; ...,37+ep
+AC available
+[root @ office 12:41 ~/tmp]$
+</pre>
+</div>
+</li>
 </ol>
+</li>
+</ol>
+</li>
+<li>如果要把 user namespace 与其它 namespace 混合使用，依旧需要root权限。解决方案是先以普通
+用户身份创建 user namespace，然后在新建的 namespace 中作为 root，再 clone() 进程加入其它
+类型的 namespace 隔离。
 </li>
 </ol>
 </div>
@@ -1366,8 +1464,111 @@ drwxrwxr-x 2 cj cj  4096 2月  18 17:12 sinatra/
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> Docker 常用选项</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> 原理(实现方式)—— cgroups</h2>
 <div class="outline-text-2" id="text-3">
+</div><div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> what's the cgroups</h3>
+<div class="outline-text-3" id="text-3-1">
+<ol class="org-ol">
+<li>由来
+cgroups 最初名为 process container，Google 内两个工程师在 06 年提出，后来由于名字有歧义，
+在 07 年更名为 control groups，并整合进 Linux 内核。
+</li>
+<li>官方定义
+<i><b>cgroups 是 Linux 内核提供的一种机制，这种机制可以根据需求把一系列系统任务及其子任务整合(或</b></i>
+<i><b>分离)到按资源划分等级的不同组内，从而为系统资源管理提供一个同一的框架。</b></i>
+</li>
+<li>特点
+<ol class="org-ol">
+<li>cgroups 的 API 以一个伪文件系统的方式实现，用户态的程序可以通过文件操作实现 cgroups 的组织管理。
+</li>
+<li>cgroups 的组织管理操作单元可以细粒度到线程级别，用户可以对其创建、销毁，实现资源再分配和管理。
+</li>
+<li>所有资源管理的功能都以子系统的方式实现，接口统一。
+</li>
+<li>子任务创建之初与其父任务处于同一个 cgroups 的控制组。
+</li>
+</ol>
+</li>
+<li>从本质上来说，cgroups 是内核附加在程序上的一系列钩子(hooks)，通过程序运行时对资源的调度触发相应的钩子
+以达到资源追踪和限制的目的。
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> 四大功能</h3>
+<div class="outline-text-3" id="text-3-2">
+<ol class="org-ol">
+<li>资源限制
+cgroups可以对任务使用的资源总额进行限制。如设定应用运行时使用内存的上限，一旦超过配额就发出 OOM (Out of Memory)
+</li>
+<li>优先级分配
+通过分配的 CPU 时间片数量及磁盘 IO 带宽大小，实际上就相当于控制了任务运行的优先级。
+</li>
+<li>资源统计
+cgroups 可以统计系统的资源使用量，如 CPU 使用时长、内存用量等，这个功能非常适用于计费。
+</li>
+<li>任务控制
+cgroups 可以对任务执行挂起、恢复等
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-3-3" class="outline-3">
+<h3 id="sec-3-3"><span class="section-number-3">3.3</span> cgroups 术语表</h3>
+<div class="outline-text-3" id="text-3-3">
+<ol class="org-ol">
+<li>task（任务）
+在 cgroups 术语中，任务表示系统的一个进程或线程
+</li>
+<li>cgroup（控制组）
+cgroups中的资源控制都以 cgroup 为单位实现。一个任务可以加入某个 cgroup，也可以从某个 cgroup
+ 迁移到另一个 cgroup。
+</li>
+<li>subsystem（子系统）
+cgroups 中的子系统就是一个资源调度控制器。CPU 子系统、内存子系统各自负责自己的调度。
+</li>
+<li>hierarchy（层级）
+层级由一系列 cgroup 以一个树状结构排列而成，每个层级通过绑定对应的子系统进行资源控制。
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-sec-3-4" class="outline-3">
+<h3 id="sec-3-4"><span class="section-number-3">3.4</span> <span class="todo TODO">TODO</span> 组织结构与基本规则 这里不理解，还需要学习</h3>
+<div class="outline-text-3" id="text-3-4">
+<ol class="org-ol">
+<li>同一个层级可以附加一个或多个子系统。
+</li>
+<li>一个子系统可以附加到多个层级，当且仅当目标层级只有唯一一个子系统时。
+</li>
+<li>系统每次新建一个层级时，该系统上的所有任务默认加入这个新建层级的初始化cgroups，这个 cgroup 也被称为 root cgroup。
+</li>
+<li>任务在fork/clone自身时创建的子任务默认与原任务在同一个 cgroup 中，但是子任务允许被移动到不同的 cgroup 中。
+</li>
+</ol>
+
+
+<div class="figure">
+<p><img src="../img/cgroups_system.png" alt="cgroups_system.png" width="500pt" />
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-3-5" class="outline-3">
+<h3 id="sec-3-5"><span class="section-number-3">3.5</span> 子系统简介</h3>
+<div class="outline-text-3" id="text-3-5">
+<p>
+子系统实际上就是 cgroups 的资源控制系统
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Docker 常用选项</h2>
+<div class="outline-text-2" id="text-4">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
@@ -1459,7 +1660,7 @@ drwxrwxr-x 2 cj cj  4096 2月  18 17:12 sinatra/
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: CarlJohn</p>
-<p class="date">Created: 2016-02-24 Wed 23:20</p>
+<p class="date">Created: 2016-02-26 Fri 22:31</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
